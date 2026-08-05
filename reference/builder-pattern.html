@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Builder Pattern — Cheat Sheet</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#666; --accent:#6b4f2a; --border:#ddd8d0; --code:#f4f2ee; }
+  body { font-family: Georgia, serif; color: var(--ink); max-width: 46rem; margin: 2rem auto 5rem; padding: 0 1.2rem; line-height: 1.55; }
+  h1 { font-size: 1.7rem; margin-bottom: .2rem; }
+  .sub { color: var(--muted); font-style: italic; margin-top: 0; }
+  h2 { font-size: 1.15rem; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-top: 2rem; }
+  table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+  th, td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+  th { background: #faf8f4; font-family: -apple-system, "Segoe UI", sans-serif; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; background: var(--code); padding: 1px 4px; border-radius: 3px; }
+  pre { font-family: ui-monospace, Consolas, monospace; font-size: .8rem; line-height: 1.5; background: var(--code); border: 1px solid var(--border); border-radius: 6px; padding: 12px 14px; overflow-x: auto; }
+  ul { padding-left: 1.3rem; }
+  li { margin: .3rem 0; }
+  a { color: var(--accent); }
+  .foot { margin-top: 2.5rem; font-size: .85rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: .8rem; }
+  @media print { body { margin: 0 auto; } a { color: var(--ink); text-decoration: none; } }
+</style>
+</head>
+<body>
+<h1>Builder</h1>
+<p class="sub">Creational · separate the construction of a complex object from its representation, so the same construction process can create different representations (GoF, 1994).</p>
+
+<h2>The cast</h2>
+<table>
+  <tr><th>Role</th><th>Job</th><th>Sandwich-shop example</th></tr>
+  <tr><td><b>Product</b></td><td>The complex object being assembled. Knows nothing about builders.</td><td><code>Sandwich</code></td></tr>
+  <tr><td><b>Builder</b> (interface)</td><td>Declares the construction steps common to all builders.</td><td><code>SandwichBuilder</code></td></tr>
+  <tr><td><b>Concrete Builder</b></td><td>Implements the steps against a real product; tracks the work-in-progress.</td><td><code>DeliSandwichBuilder</code></td></tr>
+  <tr><td><b>Director</b> <i>(optional)</i></td><td>Knows recipes — which steps, in which order. Talks only to the interface.</td><td><code>SandwichArtist</code></td></tr>
+  <tr><td><b>Client</b></td><td>Picks a builder; either hands it to a director or drives the steps itself.</td><td>your <code>main</code> code</td></tr>
+</table>
+
+<h2>Minimal TypeScript skeleton</h2>
+<pre>class Product { /* fields with sensible defaults */ }
+
+interface Builder {
+  reset(): this;
+  stepA(x: string): this;   // every step returns `this` → chainable
+  stepB(): this;
+  build(): Product;         // only build() breaks the chain
+}
+
+class ConcreteBuilder implements Builder {
+  private p = new Product();
+  reset(): this { this.p = new Product(); return this; }
+  stepA(x: string): this { /* mutate this.p */ return this; }
+  stepB(): this { /* mutate this.p */ return this; }
+  build(): Product { const done = this.p; this.reset(); return done; }
+}
+
+class Director {
+  private builder: Builder;                 // NOT constructor(private builder: Builder)
+  constructor(builder: Builder) { this.builder = builder; }
+  makeStandardThing(): Product {
+    return this.builder.reset().stepA('preset').stepB().build();
+  }
+}</pre>
+
+<h2>Rules of thumb</h2>
+<ul>
+  <li>Every step mutates the work-in-progress and returns <code>this</code> (the <a href="https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types">polymorphic <code>this</code> type</a>) — that's the fluent API.</li>
+  <li><code>build()</code> hands over the product, then resets — one builder instance serves many orders.</li>
+  <li>Recipes (fixed step sequences) belong in the <b>director</b>; one-off orders can drive the builder directly. The director is <a href="https://refactoring.guru/design-patterns/builder">explicitly optional</a>.</li>
+  <li>The director depends on the <i>interface</i>, never a concrete builder — swap builders to get different representations from the same recipe.</li>
+</ul>
+
+<h2>Reach for it when…</h2>
+<ul>
+  <li>A constructor is telescoping: many parameters, most optional.</li>
+  <li>The same construction steps should yield different representations.</li>
+  <li>Construction is genuinely step-wise (assembled over time, validated at the end).</li>
+</ul>
+
+<h2>Skip it when…</h2>
+<ul>
+  <li>An object literal with optional properties says it all: <code>new Sandwich({ bread: 'rye', toasted: true })</code> — TypeScript's named/optional params cover many classic builder use-cases.</li>
+  <li>There's only one representation and construction is one shot — plain constructor wins.</li>
+</ul>
+
+<h2>Node gotcha (type stripping)</h2>
+<ul>
+  <li><code>node file.ts</code> erases types but does <b>not</b> transform code: no <code>enum</code>, no constructor parameter properties (<code>constructor(private x: T)</code>). Declare fields, assign in the body.</li>
+</ul>
+
+<p class="foot">
+  Sources: <a href="https://refactoring.guru/design-patterns/builder">Refactoring.Guru — Builder</a> ·
+  <i>Design Patterns</i>, Gamma, Helm, Johnson &amp; Vlissides (1994) ·
+  <a href="https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types">TS Handbook — this types</a><br>
+  See also: <a href="design-patterns-glossary.html">glossary</a> ·
+  <a href="../exercises/builder/index.html">exercise 0001 (interactive)</a>
+</p>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Patterns — Glossary</title>
+<style>
+  :root { --ink:#1a1a1a; --muted:#666; --accent:#6b4f2a; --border:#ddd8d0; --code:#f4f2ee; }
+  body { font-family: Georgia, serif; color: var(--ink); max-width: 46rem; margin: 2rem auto 5rem; padding: 0 1.2rem; line-height: 1.55; }
+  h1 { font-size: 1.7rem; margin-bottom: .2rem; }
+  .sub { color: var(--muted); font-style: italic; margin-top: 0; }
+  dl { margin: 1.5rem 0; }
+  dt { font-weight: bold; font-family: -apple-system, "Segoe UI", sans-serif; font-size: .95rem; margin-top: 1rem; }
+  dt .tag { font-weight: 500; font-size: .72rem; color: var(--accent); background: #efe9df; border-radius: 4px; padding: 1px 6px; margin-left: 6px; vertical-align: middle; }
+  dd { margin: .25rem 0 0 0; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; background: var(--code); padding: 1px 4px; border-radius: 3px; }
+  a { color: var(--accent); }
+  .foot { margin-top: 2.5rem; font-size: .85rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: .8rem; }
+  @media print { a { color: var(--ink); text-decoration: none; } }
+</style>
+</head>
+<body>
+<h1>Design Patterns — Glossary</h1>
+<p class="sub">Shared vocabulary for the blog series. Every lesson and post sticks to these definitions. Grows one pattern at a time.</p>
+
+<dl>
+  <dt>Creational pattern <span class="tag">category</span></dt>
+  <dd>A pattern about <i>how objects get made</i> — hiding or organizing instantiation. Series so far: Singleton, Builder. Queued: Factory Method, Abstract Factory, Prototype.</dd>
+
+  <dt>Product <span class="tag">builder</span></dt>
+  <dd>The complex object under construction. It carries data and behavior but knows nothing about how it gets built.</dd>
+
+  <dt>Builder (interface) <span class="tag">builder</span></dt>
+  <dd>Declares the construction steps, abstracted from any concrete implementation. In TS: an <code>interface</code> whose steps return <code>this</code>.</dd>
+
+  <dt>Concrete Builder <span class="tag">builder</span></dt>
+  <dd>Implements the steps against a real product; holds the work-in-progress in a private field. <code>build()</code> hands the product over, then resets.</dd>
+
+  <dt>Director <span class="tag">builder</span></dt>
+  <dd>Holds the <i>recipes</i>: which steps to call, in what order. Depends only on the builder interface. Optional — clients may drive the steps themselves (<a href="https://refactoring.guru/design-patterns/builder">Refactoring.Guru</a>).</dd>
+
+  <dt>Client <span class="tag">builder</span></dt>
+  <dd>Code that picks a concrete builder and either hands it to a director (menu order) or chains steps directly (custom order).</dd>
+
+  <dt>Fluent API / method chaining <span class="tag">technique</span></dt>
+  <dd>Methods that return the receiver so calls chain: <code>b.setBread('rye').addDeck().build()</code>. In TS, type the return as <a href="https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types">polymorphic <code>this</code></a> so subclasses chain correctly.</dd>
+
+  <dt>Telescoping constructor <span class="tag">smell</span></dt>
+  <dd>A constructor (or overload pile) with many mostly-optional positional parameters: <code>new Sandwich('rye', 2, 'swiss', [], true)</code>. The classic motivation for Builder.</dd>
+
+  <dt>Singleton <span class="tag">pattern</span></dt>
+  <dd>Restricts a class to one instance and provides a global access point (private constructor + static <code>getInstance()</code>). Covered in the <a href="../../blog/docs/posts/anatomy/singleton-pattern.md">published post</a>.</dd>
+
+  <dt>Builder <span class="tag">pattern</span></dt>
+  <dd>Separates the construction of a complex object from its representation so the same process can create different representations (GoF). See the <a href="builder-pattern.html">cheat sheet</a>.</dd>
+</dl>
+
+<p class="foot">
+  Canonical source: <i>Design Patterns</i>, Gamma, Helm, Johnson &amp; Vlissides (1994).
+  See also: <a href="builder-pattern.html">builder cheat sheet</a> ·
+  <a href="../exercises/builder/index.html">exercise 0001</a>
+</p>
+</body>
+</html>

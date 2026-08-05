@@ -1,0 +1,395 @@
+/**
+ * Exercise 0001 — Builder pattern, sandwich shop edition.
+ * Content only. All app machinery lives in app/engine.js.
+ */
+Dojo.register({
+  meta: {
+    id: 'builder',
+    number: '0001',
+    title: 'The Builder Pattern',
+    heading: 'Order up: build the Builder',
+    emoji: '🥪',
+    domain: 'Sandwich shop',
+    category: 'Creational',
+    blurb: 'Assemble a sandwich step by step. Product, Builder, Concrete Builder, ' +
+           'Director — your first pattern where roles collaborate.',
+    missionNote: '<b>Mission tie-in:</b> everything you write here becomes the <i>Example</i> and ' +
+      '<i>Dissection</i> sections of <code>docs/posts/drafts/builder-pattern.md</code> in the blog repo. ' +
+      'Singleton was one class; Builder is your first pattern where <i>roles collaborate</i>.',
+    howto: 'Work in the editor →, or click <b>Watch a file</b> to code in VS Code ' +
+      '(<code>blog/sandbox/builder-pattern.ts</code>) with live checking here. You can also run ' +
+      'that file directly: <code>node sandbox/builder-pattern.ts</code>.',
+    primarySource: {
+      url: 'https://refactoring.guru/design-patterns/builder',
+      label: 'Builder — Refactoring.Guru',
+      note: '(roles, applicability, director optionality). Canonical reference: ' +
+            '<i>Design Patterns</i>, Gamma, Helm, Johnson &amp; Vlissides (1994).'
+    },
+    references: [
+      { href: '../../reference/builder-pattern.html', label: 'Builder cheat sheet' },
+      { href: '../../reference/design-patterns-glossary.html', label: 'Design-patterns glossary' }
+    ],
+    finale: '🎉 <b>All checks green.</b> To make it stick:' +
+      '<ul style="margin:8px 0 0; padding-left:18px;">' +
+      '<li><b>Now:</b> draft the <i>Dissection</i> section of your post from memory, one heading per role — ' +
+        'then check back against your code.</li>' +
+      '<li><b>After drafting:</b> compare your implementation with ' +
+        '<a href="https://refactoring.guru/design-patterns/builder/typescript/example" target="_blank">' +
+        'Refactoring.Guru\'s TS example</a> — note one thing you\'d defend doing differently.</li>' +
+      '<li><b>In ~2 days:</b> delete your sandbox file body and rebuild it cold. ' +
+        'Spaced retrieval beats rereading.</li>' +
+      '<li><b>Then:</b> tell Claude you\'re done — I\'ll review your code against the pattern ' +
+        'and help outline the post.</li></ul>'
+  },
+
+  // declarations pulled out of the learner's code so checks can exercise them
+  captures: ['Sandwich', 'DeliSandwichBuilder', 'SandwichArtist'],
+
+  expected: {
+    plain: 'Fresh white sandwich, 1 deck(s), no cheese',
+    custom: 'Fresh rye sandwich, 2 deck(s), no cheese + pastrami',
+    grilledCheese: 'Toasted white sandwich, 1 deck(s), cheddar cheese',
+    club: 'Toasted wheat sandwich, 2 deck(s), swiss cheese + turkey + bacon'
+  },
+
+  scaffold: [
+    '/**',
+    ' * THE BUILDER PATTERN - sandwich shop edition',
+    ' * Follow the steps in the left panel. Run checks: Ctrl+Enter.',
+    ' */',
+    '',
+    '// -- STEP 1 - PRODUCT ------------------------------------------',
+    '',
+    '',
+    '// -- STEP 2 - BUILDER INTERFACE --------------------------------',
+    '',
+    '',
+    '// -- STEP 3 - CONCRETE BUILDER ---------------------------------',
+    '',
+    '',
+    '// -- STEP 4 - DIRECTOR -----------------------------------------',
+    '',
+    '',
+    '// -- STEP 5 - USAGE --------------------------------------------',
+    ''
+  ].join('\n'),
+
+  steps: [
+    {
+      title: 'The Product',
+      chip: 'blog: Dissection → Product',
+      body:
+        '<p>The <b>Product</b> is the complex object being assembled — a <code>Sandwich</code>. ' +
+        'It knows <i>nothing</i> about builders; it\'s just data plus behavior.</p>' +
+        '<p>Why does this pattern exist? Imagine the alternative — one constructor trying to cover ' +
+        'every order: <code>new Sandwich(\'rye\', 2, \'swiss\', [\'pastrami\'], true)</code>. ' +
+        'Five positional arguments, most optional, impossible to read. That\'s the ' +
+        '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">' +
+        '"telescoping constructor"</a> problem Builder solves.</p>' +
+        '<p><b>Write:</b></p><ul>' +
+        '<li>Type aliases: <code>Bread = \'white\' | \'wheat\' | \'rye\'</code> and ' +
+          '<code>Cheese = \'none\' | \'cheddar\' | \'swiss\'</code></li>' +
+        '<li><code>class Sandwich</code> with fields: <code>bread: Bread = \'white\'</code>, ' +
+          '<code>decks = 1</code> (a club sandwich is a double-decker), ' +
+          '<code>cheese: Cheese = \'none\'</code>, <code>toppings: string[] = []</code>, ' +
+          '<code>toasted = false</code></li>' +
+        '<li>A <code>describe(): string</code> method — formatting isn\'t the lesson, so copy this body:</li>' +
+        '</ul>' +
+        '<pre class="snippet">describe(): string {\n' +
+        '  const parts = [\n' +
+        '    this.toasted ? \'Toasted\' : \'Fresh\',\n' +
+        '    this.bread,\n' +
+        '    \'sandwich,\',\n' +
+        '    `${this.decks} deck(s),`,\n' +
+        '    this.cheese === \'none\' ? \'no cheese\' : `${this.cheese} cheese`,\n' +
+        '  ];\n' +
+        '  if (this.toppings.length) parts.push(`+ ${this.toppings.join(\' + \')}`);\n' +
+        '  return parts.join(\' \');\n' +
+        '}</pre>' +
+        '<p><b>Checkpoint</b> — add this line and hit <i>Run checks</i>:</p>' +
+        '<pre class="snippet">console.log(new Sandwich().describe());</pre>' +
+        '<div class="expected">Fresh white sandwich, 1 deck(s), no cheese</div>',
+      checks: [
+        {
+          name: 'class Sandwich exists',
+          run: function (c) {
+            if (typeof c.g.Sandwich !== 'function') return 'No Sandwich class found yet.';
+          }
+        },
+        {
+          name: 'sensible defaults (white, 1 deck, no cheese, no toppings, fresh)',
+          run: function (c) {
+            var s = new c.g.Sandwich();
+            var ok = s.bread === 'white' && s.decks === 1 && s.cheese === 'none' &&
+                     Array.isArray(s.toppings) && s.toppings.length === 0 && s.toasted === false;
+            if (!ok) return 'new Sandwich() should default to: bread "white", decks 1, ' +
+              'cheese "none", toppings [], toasted false.';
+          }
+        },
+        {
+          name: 'describe() reads right',
+          run: function (c) { return c.eq(new c.g.Sandwich().describe(), c.expect.plain); }
+        }
+      ]
+    },
+
+    {
+      title: 'The Builder interface',
+      chip: 'blog: Dissection → Builder',
+      body:
+        '<p>The <b>Builder</b> declares the construction steps, abstracted away from any particular ' +
+        'implementation. Type this in by hand (don\'t paste — read each line as you go):</p>' +
+        '<pre class="snippet">interface SandwichBuilder {\n' +
+        '  reset(): this;\n' +
+        '  setBread(bread: Bread): this;\n' +
+        '  addDeck(): this;\n' +
+        '  setCheese(cheese: Cheese): this;\n' +
+        '  addTopping(topping: string): this;\n' +
+        '  toast(): this;\n' +
+        '  build(): Sandwich;\n' +
+        '}</pre>' +
+        '<p class="why">Every step returns <code>this</code> — TypeScript\'s ' +
+        '<a href="https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types" target="_blank">' +
+        'polymorphic <code>this</code> type</a>. That single decision is what makes chaining ' +
+        '(the <b>Fluent API</b> in your blog outline) possible. Only <code>build()</code> breaks the ' +
+        'chain — it hands over the product.</p>' +
+        '<p><b>Checkpoint:</b> run checks. (Fun fact the checker will teach you: interfaces are erased ' +
+        'at compile time, so this step is verified by reading your <i>source text</i>, not your ' +
+        'running code.)</p>',
+      checks: [
+        {
+          name: 'interface SandwichBuilder declared',
+          run: function (c) {
+            if (!/interface\s+SandwichBuilder\b/.test(c.clean)) {
+              return 'Declare `interface SandwichBuilder { ... }`. (Interfaces are erased at compile ' +
+                'time, so this check reads your source text — there is nothing left of an interface ' +
+                'at runtime!)';
+            }
+          }
+        },
+        {
+          name: 'declares all seven steps',
+          run: function (c) {
+            var m = c.clean.match(/interface\s+SandwichBuilder\s*\{([\s\S]*?)\n\}/);
+            if (!m) return 'Could not read the interface body.';
+            var missing = ['reset', 'setBread', 'addDeck', 'setCheese', 'addTopping', 'toast', 'build']
+              .filter(function (n) { return !(new RegExp(n + '\\s*\\(')).test(m[1]); });
+            if (missing.length) return 'Missing method(s): ' + missing.join(', ');
+          }
+        },
+        {
+          name: 'fluent steps return `this`, build() returns Sandwich',
+          run: function (c) {
+            var m = c.clean.match(/interface\s+SandwichBuilder\s*\{([\s\S]*?)\n\}/);
+            if (!m) return 'Could not read the interface body.';
+            var thisCount = (m[1].match(/\)\s*:\s*this\b/g) || []).length;
+            var buildOk = /build\s*\(\s*\)\s*:\s*Sandwich\b/.test(m[1]);
+            if (thisCount < 6 || !buildOk) {
+              return 'Six steps should return `this` (found ' + thisCount + '); ' +
+                'build() should return Sandwich.';
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      title: 'The Concrete Builder',
+      chip: 'blog: Dissection → Concrete Builder',
+      body:
+        '<p>Now the real deli counter: <code>class DeliSandwichBuilder implements SandwichBuilder</code>. ' +
+        'It holds one in-progress <code>Sandwich</code> in a private field. ' +
+        '<b>This one is all yours</b> — two rules:</p><ul>' +
+        '<li>Every step mutates the in-progress sandwich and <code>return this;</code></li>' +
+        '<li><code>build()</code> hands over the finished sandwich, then resets — a builder is ' +
+          '<i>reusable</i>, one instance can make order after order</li></ul>' +
+        '<details class="hint"><summary>Hint 1 — one method as a template</summary>' +
+        '<pre class="snippet">setBread(bread: Bread): this {\n' +
+        '  this.sandwich.bread = bread;\n' +
+        '  return this;\n' +
+        '}</pre>' +
+        '<p class="why">The other steps follow the same shape. <code>addDeck()</code> does ' +
+        '<code>this.sandwich.decks += 1</code>.</p></details>' +
+        '<details class="hint"><summary>Hint 2 — the build/reset dance</summary>' +
+        '<pre class="snippet">build(): Sandwich {\n' +
+        '  const order = this.sandwich;\n' +
+        '  this.reset();\n' +
+        '  return order;\n' +
+        '}</pre></details>' +
+        '<p><b>Checkpoint</b> — a customer with opinions:</p>' +
+        '<pre class="snippet">const builder = new DeliSandwichBuilder();\n' +
+        'const custom = builder.setBread(\'rye\').addDeck().addTopping(\'pastrami\').build();\n' +
+        'console.log(custom.describe());</pre>' +
+        '<div class="expected">Fresh rye sandwich, 2 deck(s), no cheese + pastrami</div>',
+      checks: [
+        {
+          name: 'DeliSandwichBuilder implements SandwichBuilder',
+          run: function (c) {
+            var declared = /class\s+DeliSandwichBuilder\s+implements\s+SandwichBuilder\b/.test(c.clean);
+            if (!declared || typeof c.g.DeliSandwichBuilder !== 'function') {
+              return 'Declare `class DeliSandwichBuilder implements SandwichBuilder`.';
+            }
+          }
+        },
+        {
+          name: 'steps are fluent (each returns the builder itself)',
+          run: function (c) {
+            var b = new c.g.DeliSandwichBuilder();
+            if (!(b.setBread('white') === b && b.addDeck() === b && b.toast() === b)) {
+              return 'Each step must `return this;` — the very same builder instance.';
+            }
+          }
+        },
+        {
+          name: 'the pastrami-on-rye order comes out right',
+          run: function (c) {
+            var got = new c.g.DeliSandwichBuilder()
+              .setBread('rye').addDeck().addTopping('pastrami').build().describe();
+            return c.eq(got, c.expect.custom);
+          }
+        },
+        {
+          name: 'build() resets — the builder is reusable',
+          run: function (c) {
+            var b = new c.g.DeliSandwichBuilder();
+            b.setBread('rye').addTopping('mustard').toast().build();
+            var got = b.build().describe();
+            if (got !== c.expect.plain) {
+              return 'After build(), the next build() should be a fresh default sandwich — got "' +
+                got + '". (build() should hand over the sandwich, then reset().)';
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      title: 'The Director',
+      chip: 'blog: Dissection → Director',
+      body:
+        '<p>The <b>Director</b> knows the <i>recipes</i>: which steps, in which order. It works against ' +
+        'the <code>SandwichBuilder</code> interface — it must never mention ' +
+        '<code>DeliSandwichBuilder</code>. Ours is a <code>SandwichArtist</code>.</p>' +
+        '<p><b>Write</b> a <code>SandwichArtist</code> class that takes a <code>SandwichBuilder</code> ' +
+        'in its constructor and offers two menu items (each recipe should <code>reset()</code> first):</p>' +
+        '<ul>' +
+        '<li><code>makeGrilledCheese(): Sandwich</code> — white bread, cheddar, toasted</li>' +
+        '<li><code>makeClubSandwich(): Sandwich</code> — wheat, one extra deck, swiss, turkey topping, ' +
+          'bacon topping, toasted</li></ul>' +
+        '<p class="why">⚠ Node trap: <code>constructor(private builder: SandwichBuilder)</code> is a ' +
+        '"parameter property" — it won\'t survive Node\'s type stripping. Declare the field, then ' +
+        'assign it in the constructor body. The checker enforces this.</p>' +
+        '<details class="hint"><summary>Hint — constructor shape</summary>' +
+        '<pre class="snippet">private builder: SandwichBuilder;\n\n' +
+        'constructor(builder: SandwichBuilder) {\n' +
+        '  this.builder = builder;\n' +
+        '}</pre></details>' +
+        '<p><b>Checkpoint:</b></p>' +
+        '<pre class="snippet">const artist = new SandwichArtist(builder);\n' +
+        'console.log(artist.makeGrilledCheese().describe());\n' +
+        'console.log(artist.makeClubSandwich().describe());</pre>' +
+        '<div class="expected">Toasted white sandwich, 1 deck(s), cheddar cheese\n' +
+        'Toasted wheat sandwich, 2 deck(s), swiss cheese + turkey + bacon</div>',
+      checks: [
+        {
+          name: 'class SandwichArtist exists',
+          run: function (c) {
+            if (typeof c.g.SandwichArtist !== 'function') return 'No SandwichArtist class found yet.';
+          }
+        },
+        {
+          name: 'no constructor parameter properties (Node trap)',
+          run: function (c) {
+            if (/constructor\s*\(\s*(?:private|public|protected|readonly)\b/.test(c.clean)) {
+              return '`constructor(private builder: ...)` won\'t survive Node\'s type stripping. ' +
+                'Declare the field, assign in the constructor body.';
+            }
+          }
+        },
+        {
+          name: 'makeGrilledCheese() recipe',
+          run: function (c) {
+            var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder())
+              .makeGrilledCheese().describe();
+            if (got !== c.expect.grilledCheese) {
+              return 'Expected "' + c.expect.grilledCheese + '" but got "' + got +
+                '". (Recipe: reset, white bread, cheddar, toasted.)';
+            }
+          }
+        },
+        {
+          name: 'makeClubSandwich() recipe',
+          run: function (c) {
+            var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder())
+              .makeClubSandwich().describe();
+            if (got !== c.expect.club) {
+              return 'Expected "' + c.expect.club + '" but got "' + got +
+                '". (Recipe: reset, wheat, one extra deck, swiss, turkey, bacon, toasted.)';
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      title: 'Usage — two ways to order',
+      chip: 'blog: Usage',
+      body:
+        '<p>You already have both usage modes in your file — make sure all four ' +
+        '<code>console.log</code> lines from the checkpoints are present and run together:</p><ul>' +
+        '<li><b>Client drives the builder directly</b> — the custom pastrami-on-rye. Flexible, ' +
+          'reads like a sentence.</li>' +
+        '<li><b>Director drives the builder</b> — the menu. Recipes live in one place; callers ' +
+          'can\'t get them wrong.</li></ul>' +
+        '<div class="expected">Fresh white sandwich, 1 deck(s), no cheese\n' +
+        'Fresh rye sandwich, 2 deck(s), no cheese + pastrami\n' +
+        'Toasted white sandwich, 1 deck(s), cheddar cheese\n' +
+        'Toasted wheat sandwich, 2 deck(s), swiss cheese + turkey + bacon</div>' +
+        '<p class="why">Per the GoF and ' +
+        '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">Refactoring.Guru</a>, ' +
+        'the Director is <i>optional</i> — client code may call the steps itself. Worth saying in ' +
+        'your post.</p>' +
+        '<p><b>Also try it for real:</b> <code>node sandbox/builder-pattern.ts</code> in the blog repo ' +
+        '(if you\'ve been working in the in-page editor, paste your code into the sandbox file first).</p>',
+      checks: [
+        {
+          name: 'all four checkpoint lines print',
+          run: function (c) {
+            var missing = c.missingLines([
+              c.expect.plain, c.expect.custom, c.expect.grilledCheese, c.expect.club
+            ]);
+            if (missing.length) {
+              return 'Console is missing: ' + missing.map(function (s) { return '"' + s + '"'; }).join(', ');
+            }
+          }
+        }
+      ]
+    }
+  ],
+
+  quiz: [
+    {
+      q: 'In a fluent builder, every configuration step returns…',
+      options: ['the builder itself', 'the finished product', 'a fresh sandwich', 'the void type'],
+      answer: 0,
+      explain: 'Returning <code>this</code> is what lets calls chain. Only <code>build()</code> ' +
+        'hands over the product.'
+    },
+    {
+      q: 'Which role owns the <i>order</i> of steps for a standard recipe?',
+      options: ['the builder', 'the product', 'the director', 'the client'],
+      answer: 2,
+      explain: 'Builders know <i>how</i> to do each step; the director (your SandwichArtist) knows ' +
+        '<i>which</i> steps in <i>what</i> order. Clients may also drive steps directly — the ' +
+        'director is optional.'
+    },
+    {
+      q: 'The Builder pattern earns its keep when a class has…',
+      options: ['one global shared instance', 'many optional construction knobs',
+                'too many child classes', 'no public constructor available'],
+      answer: 1,
+      explain: 'The escape from telescoping constructors. ("One global shared instance" is the ' +
+        'Singleton — your published post.)'
+    }
+  ]
+});
