@@ -2,7 +2,7 @@
   "name": "design-pattern-academy",
   "displayName": "Design Pattern Academy",
   "description": "Learn design patterns by implementing them in your own editor, with gated steps and automated checks.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "publisher": "local",
   "license": "UNLICENSED",
@@ -20,16 +20,45 @@
   "main": "./extension.js",
   "activationEvents": [],
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "designPatternAcademy",
+          "title": "Design Pattern Academy",
+          "icon": "media/academy.svg"
+        }
+      ]
+    },
+    "views": {
+      "designPatternAcademy": [
+        {
+          "id": "designPatternAcademy.exercises",
+          "name": "Exercises",
+          "contextualTitle": "Design Pattern Academy"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "designPatternAcademy.runChecks",
+          "when": "view == designPatternAcademy.exercises",
+          "group": "navigation"
+        }
+      ]
+    },
     "commands": [
       {
         "command": "designPatternAcademy.open",
         "title": "Open",
-        "category": "Design Pattern Academy"
+        "category": "Design Pattern Academy",
+        "icon": "$(mortar-board)"
       },
       {
         "command": "designPatternAcademy.runChecks",
         "title": "Run Checks",
-        "category": "Design Pattern Academy"
+        "category": "Design Pattern Academy",
+        "icon": "$(play)"
       },
       {
         "command": "designPatternAcademy.resetExercise",

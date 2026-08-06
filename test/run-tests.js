@@ -19,10 +19,25 @@ const Uri = {
   file: (p) => ({ fsPath: p, toString: () => 'file://' + p }),
   joinPath: (base, ...parts) => Uri.file(path.join(base.fsPath, ...parts))
 };
+const treeProviders = {};
 const fakeVscode = {
   Uri,
   ViewColumn: { One: 1, Two: 2 },
   DiagnosticSeverity: { Error: 0, Warning: 1 },
+  TreeItem: class {
+    constructor(label, collapsibleState) {
+      this.label = label;
+      this.collapsibleState = collapsibleState;
+    }
+  },
+  TreeItemCollapsibleState: { None: 0, Collapsed: 1, Expanded: 2 },
+  ThemeIcon: class { constructor(id, color) { this.id = id; this.color = color; } },
+  ThemeColor: class { constructor(id) { this.id = id; } },
+  EventEmitter: class {
+    constructor() { this.event = () => ({ dispose() {} }); }
+    fire() {}
+    dispose() {}
+  },
   workspace: {
     workspaceFolders: [{ uri: Uri.file(path.join(ROOT, 'sandbox')) }],
     getConfiguration: () => ({ get: (_key, dflt) => dflt }),
@@ -46,7 +61,11 @@ const fakeVscode = {
     showErrorMessage: (m) => { throw new Error('unexpected error message: ' + m); },
     showInformationMessage: () => {},
     showWarningMessage: async () => undefined,
-    showQuickPick: async () => undefined
+    showQuickPick: async () => undefined,
+    registerTreeDataProvider: (id, provider) => {
+      treeProviders[id] = provider;
+      return { dispose() {} };
+    }
   },
   languages: { getDiagnostics: () => [] },
   commands: {
@@ -112,6 +131,21 @@ test('every exercise loads and declares the required fields', () => {
       assert.ok(q.answer >= 0 && q.answer < q.options.length, def.meta.id + ': quiz answer in range');
     }
   }
+});
+
+test('sidebar tree lists exercises with progress and reference sheets', () => {
+  const provider = treeProviders['designPatternAcademy.exercises'];
+  assert.ok(provider, 'tree provider should be registered at activation');
+  const roots = provider.getChildren();
+  const builder = roots.find((r) => String(r.label).includes('The Builder Pattern'));
+  assert.ok(builder, 'builder exercise appears in the tree');
+  assert.deepEqual(builder.command.arguments, ['builder'], 'clicking opens that exercise directly');
+  assert.match(String(builder.description), /^0\/6$/, 'fresh state shows 0/6');
+  const refRoot = roots.find((r) => r.contextValue === 'dpa.referenceRoot');
+  assert.ok(refRoot, 'reference sheets node exists');
+  const refs = provider.getChildren(refRoot);
+  assert.ok(refs.some((r) => r.command.arguments[0] === 'builder-pattern.md'));
+  assert.ok(refs.some((r) => r.command.arguments[0] === 'design-patterns-glossary.md'));
 });
 
 test('panel renders with a CSP nonce and no un-nonced script', () => {

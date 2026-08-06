@@ -105,6 +105,78 @@ async function scaffold(def, { overwrite = false } = {}) {
   return uris;
 }
 
+// ---------------------------------------------------------------- sidebar
+
+/** How far through an exercise the learner is, from persisted state. */
+function progressFor(context, def) {
+  const total = (def.steps || []).length + ((def.quiz || []).length ? 1 : 0);
+  const steps = context.globalState.get(`dpa.${def.meta.id}.steps`, []);
+  const quiz = context.globalState.get(`dpa.${def.meta.id}.quiz`, []);
+  const quizDone = (def.quiz || []).length > 0 && def.quiz.every((_q, i) => quiz[i]);
+  const done = Math.min(steps.filter(Boolean).length + (quizDone ? 1 : 0), total);
+  return { done, total, complete: total > 0 && done >= total };
+}
+
+/** Activity-bar tree: exercises with live progress, reference sheets below. */
+class ExerciseTree {
+  constructor(context) {
+    this.context = context;
+    this._emitter = new vscode.EventEmitter();
+    this.onDidChangeTreeData = this._emitter.event;
+  }
+
+  refresh() {
+    this._emitter.fire(undefined);
+  }
+
+  getTreeItem(item) {
+    return item;
+  }
+
+  getChildren(element) {
+    if (!element) {
+      const items = listExercises().map(({ def }) => this.exerciseItem(def));
+      items.push(this.referenceRoot());
+      return items;
+    }
+    if (element.contextValue === 'dpa.referenceRoot' && fs.existsSync(REFERENCE_DIR)) {
+      return fs
+        .readdirSync(REFERENCE_DIR)
+        .filter((f) => f.endsWith('.md'))
+        .map((f) => this.referenceItem(f));
+    }
+    return [];
+  }
+
+  exerciseItem(def) {
+    const p = progressFor(this.context, def);
+    const item = new vscode.TreeItem(`${def.meta.number} · ${def.meta.title}`);
+    item.description = p.complete ? 'Complete ✓' : `${p.done}/${p.total}`;
+    item.tooltip = def.meta.blurb || def.meta.title;
+    item.iconPath = p.complete
+      ? new vscode.ThemeIcon('pass-filled', new vscode.ThemeColor('testing.iconPassed'))
+      : new vscode.ThemeIcon(p.done > 0 ? 'play-circle' : 'circle-large-outline');
+    item.command = { command: 'designPatternAcademy.open', title: 'Open', arguments: [def.meta.id] };
+    item.contextValue = 'dpa.exercise';
+    return item;
+  }
+
+  referenceRoot() {
+    const item = new vscode.TreeItem('Reference sheets', vscode.TreeItemCollapsibleState.Collapsed);
+    item.iconPath = new vscode.ThemeIcon('book');
+    item.contextValue = 'dpa.referenceRoot';
+    return item;
+  }
+
+  referenceItem(name) {
+    const item = new vscode.TreeItem(name.replace(/\.md$/, ''));
+    item.iconPath = new vscode.ThemeIcon('markdown');
+    item.command = { command: 'designPatternAcademy.openReference', title: 'Open', arguments: [name] };
+    item.contextValue = 'dpa.reference';
+    return item;
+  }
+}
+
 // ---------------------------------------------------------------- session
 
 class Session {
@@ -114,6 +186,11 @@ class Session {
     this.def = null;
     this.uris = null;
     this.disposables = [];
+    this.onProgress = null; // sidebar refresh hook
+  }
+
+  notifyProgress() {
+    if (this.onProgress) this.onProgress();
   }
 
   key(what) {
@@ -183,7 +260,7 @@ class Session {
     if (msg.type === 'quiz') {
       const quiz = this.context.globalState.get(this.key('quiz'), []);
       quiz[msg.index] = true;
-      this.context.globalState.update(this.key('quiz'), quiz);
+      this.context.globalState.update(this.key('quiz'), quiz).then(() => this.notifyProgress());
     }
     if (msg.type === 'reference') {
       openReference(msg.name);
@@ -221,16 +298,18 @@ class Session {
       .sort((a, b) => a.line - b.line);
 
     if (typeErrors.length) {
-      this.context.globalState.update(this.key('steps'), []);
+      await this.context.globalState.update(this.key('steps'), []);
+      this.notifyProgress();
       post({ type: 'results', typeErrors, progress: this.progress() });
       return;
     }
 
     const report = runChecks(this.def, source);
-    this.context.globalState.update(
+    await this.context.globalState.update(
       this.key('steps'),
       report.steps.map((s) => s.passed)
     );
+    this.notifyProgress();
     post({ type: 'results', report, progress: this.progress() });
   }
 
@@ -248,6 +327,7 @@ class Session {
     await scaffold(this.def, { overwrite: true });
     await this.context.globalState.update(this.key('quiz'), []);
     await this.context.globalState.update(this.key('steps'), []);
+    this.notifyProgress();
     if (this.panel) {
       this.panel.webview.html = panelHtml(this.panel.webview, __dirname, this.def, this.progress());
     }
@@ -278,16 +358,24 @@ async function pickReference() {
 
 function activate(context) {
   const session = new Session(context);
+  const tree = new ExerciseTree(context);
+  session.onProgress = () => tree.refresh();
 
   context.subscriptions.push(
-    vscode.commands.registerCommand('designPatternAcademy.open', async () => {
+    vscode.window.registerTreeDataProvider('designPatternAcademy.exercises', tree),
+
+    // `exerciseId` arrives when a sidebar item is clicked; the palette passes nothing.
+    vscode.commands.registerCommand('designPatternAcademy.open', async (exerciseId) => {
       const exercises = listExercises();
       if (!exercises.length) {
         vscode.window.showErrorMessage('No exercises found in the extension\'s exercises/ folder.');
         return;
       }
-      let chosen = exercises[0];
-      if (exercises.length > 1) {
+      let chosen = typeof exerciseId === 'string'
+        ? exercises.find((e) => e.id === exerciseId)
+        : exercises[0];
+      if (!chosen) chosen = exercises[0];
+      if (typeof exerciseId !== 'string' && exercises.length > 1) {
         const items = exercises.map(({ def }) => {
           const done = context.globalState.get(`dpa.${def.meta.id}.steps`, []).filter(Boolean).length;
           const total = (def.steps || []).length;
@@ -314,7 +402,10 @@ function activate(context) {
     }),
 
     vscode.commands.registerCommand('designPatternAcademy.resetExercise', () => session.reset()),
-    vscode.commands.registerCommand('designPatternAcademy.openReference', () => pickReference()),
+    // `name` arrives from a sidebar reference item; the palette shows the picker.
+    vscode.commands.registerCommand('designPatternAcademy.openReference', (name) =>
+      typeof name === 'string' ? openReference(name) : pickReference()
+    ),
 
     { dispose: () => session.disposeWatchers() }
   );
