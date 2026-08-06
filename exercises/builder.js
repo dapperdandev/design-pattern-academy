@@ -55,7 +55,7 @@ module.exports = {
       howto: 'Write your code in <code>builder.ts</code> beside this panel. Every save re-runs the ' +
         'checks, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Enter</kbd>. Type errors come from ' +
         'VS Code itself — if it\'s underlined in the editor, fix that first. You can also run the ' +
-        'file directly: <code>node builder.ts</code>.',
+        'file directly: <code>node builder/builder.ts</code>.',
       primarySource: {
         url: 'https://refactoring.guru/design-patterns/builder',
         label: 'Builder — Refactoring.Guru',

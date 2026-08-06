@@ -45,12 +45,16 @@ Checks re-run on every save (`designPatternAcademy.runChecksOnSave`).
 
 ### Where your files go
 
-Everything goes in the **root of the folder you have open** — best used with a dedicated
-folder (e.g. `K:\per\design-patterns`):
+Exercises go in the **folder you have open** — best used with a dedicated folder
+(e.g. `K:\per\design-patterns`):
 
-- `<id>.ts` — one file per pattern, e.g. `builder.ts`
-- `tsconfig.json` — **one shared config for all patterns**: strict, ES2020 lib, no ambient types
-- `dpa-globals.d.ts` — **one shared file**: declares `console` (the ES2020 lib doesn't have it)
+```
+<workspace>/
+  tsconfig.json         one shared config for all patterns: strict, ES2020, no ambient types
+  dpa-globals.d.ts      one shared file: declares console (the ES2020 lib doesn't have it)
+  builder/builder.ts    your code, one subfolder per pattern
+  factory-method/...
+```
 
 The two support files exist because the TypeScript server discovers configuration by
 walking up the directory tree from the file — extensions can't inject compiler options.

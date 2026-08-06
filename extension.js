@@ -39,12 +39,11 @@ function listExercises() {
 // ---------------------------------------------------------------- scaffolding
 
 /**
- * Everything goes in the ROOT of the open workspace: one exercise file per
- * pattern plus ONE shared tsconfig.json and ONE shared dpa-globals.d.ts for all
- * of them. The support files must be in an ancestor directory of the code — the
- * TypeScript server discovers config by walking up from the file, and extensions
- * can't inject compiler options — and the root is the one ancestor every
- * exercise shares.
+ * Each exercise gets its own subfolder — <workspace>/<id>/<id>.ts — but the
+ * support files live ONCE at the workspace root, shared by every pattern. The
+ * TypeScript server discovers config by walking up from the file (extensions
+ * can't inject compiler options), and the root is the one ancestor every
+ * exercise folder shares.
  *
  * The price of sharing one tsconfig is one global scope: exercise files are
  * scripts (no imports), so top-level declaration names must be unique across
@@ -55,9 +54,10 @@ function exerciseUris(def) {
   const folders = vscode.workspace.workspaceFolders;
   if (!folders || !folders.length) return null;
   const root = folders[0].uri;
+  const dir = vscode.Uri.joinPath(root, def.meta.id);
   return {
-    dir: root,
-    file: vscode.Uri.joinPath(root, `${def.meta.id}.ts`),
+    dir,
+    file: vscode.Uri.joinPath(dir, `${def.meta.id}.ts`),
     tsconfig: vscode.Uri.joinPath(root, 'tsconfig.json'),
     globals: vscode.Uri.joinPath(root, 'dpa-globals.d.ts')
   };
@@ -75,7 +75,7 @@ const TSCONFIG = `{
     "noEmit": true,
     "types": []
   },
-  "include": ["*.ts"]
+  "include": ["**/*.ts"]
 }
 `;
 
@@ -122,6 +122,7 @@ async function scaffold(def, { overwrite = false } = {}) {
     );
     return null;
   }
+  await vscode.workspace.fs.createDirectory(uris.dir);
   await upsertConfig(uris.tsconfig, TSCONFIG);
   await upsertConfig(uris.globals, GLOBALS);
   if (overwrite || !(await exists(uris.file))) {

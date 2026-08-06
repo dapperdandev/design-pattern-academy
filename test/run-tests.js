@@ -162,10 +162,11 @@ test('panel renders with a CSP nonce and no un-nonced script', () => {
 section('== scaffolding ==');
 const def = require(path.join(ROOT, 'exercises/builder.js'));
 
-test('everything scaffolds into the workspace root, one shared config for all patterns', async () => {
+test('code in per-pattern subfolders, one shared config pair at the root', async () => {
   const root = fakeVscode.workspace.workspaceFolders[0].uri.fsPath;
   const uris = await extension.scaffold(def);
-  assert.equal(uris.file.fsPath, path.join(root, 'builder.ts'));
+  assert.equal(uris.file.fsPath, path.join(root, 'builder', 'builder.ts'),
+    'exercise code gets its own folder');
   assert.equal(uris.tsconfig.fsPath, path.join(root, 'tsconfig.json'),
     'ONE tsconfig at the root covers every exercise');
   assert.equal(uris.globals.fsPath, path.join(root, 'dpa-globals.d.ts'));
