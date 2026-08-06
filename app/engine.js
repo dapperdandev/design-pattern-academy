@@ -11,10 +11,25 @@
 (function (global) {
   'use strict';
 
+  var TS_VERSION = '5.5.4';
   var TS_URLS = [
-    'https://unpkg.com/typescript@5.5.4/lib/typescript.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/typescript/5.5.4/typescript.min.js'
+    'https://unpkg.com/typescript@' + TS_VERSION + '/lib/typescript.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/typescript/' + TS_VERSION + '/typescript.min.js'
   ];
+  var LIB_BASE = 'https://unpkg.com/typescript@' + TS_VERSION + '/lib/';
+  var ROOT_LIB = 'lib.es2020.d.ts';
+  var CHECK_FILE = 'exercise.ts';
+  var AMBIENT_FILE = 'dojo-globals.d.ts';
+  // The ES2020 lib has no `console` (it lives in lib.dom, which we don't want to
+  // pull in). Declaring it in a separate file rather than prepending to the
+  // learner's source keeps their line numbers honest, and declaring exactly the
+  // four methods the runner implements keeps the check truthful.
+  var AMBIENT_SRC = 'declare var console: {\n' +
+    '  log(...data: unknown[]): void;\n' +
+    '  info(...data: unknown[]): void;\n' +
+    '  warn(...data: unknown[]): void;\n' +
+    '  error(...data: unknown[]): void;\n' +
+    '};\n';
 
   var Dojo = {
     registry: [],
@@ -133,6 +148,82 @@
     }).join(', ') + ' }';
   }
 
+  // ---------- type checking ----------
+  // transpileModule only strips types, so on its own it will happily run code
+  // that `tsc --strict` rejects (readonly violations, wrong types...). A real
+  // program needs the lib .d.ts files, which are fetched once and HTTP-cached.
+  var libs = {};
+  var libsState = 'idle'; // idle | loading | ready | failed
+
+  function loadLibs() {
+    if (libsState !== 'idle') return;
+    libsState = 'loading';
+    var seen = {};
+    function load(name) {
+      if (seen[name]) return seen[name];
+      seen[name] = fetch(LIB_BASE + name)
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + name);
+          return r.text();
+        })
+        .then(function (txt) {
+          libs[name] = txt;
+          var refs = [], m, re = /\/\/\/\s*<reference\s+lib="([^"]+)"\s*\/>/g;
+          while ((m = re.exec(txt))) refs.push('lib.' + m[1] + '.d.ts');
+          return Promise.all(refs.map(load));
+        });
+      return seen[name];
+    }
+    return load(ROOT_LIB).then(function () {
+      libsState = 'ready';
+      if (Dojo._onLibs) Dojo._onLibs();
+    }).catch(function () {
+      libsState = 'failed';
+      if (Dojo._onLibs) Dojo._onLibs();
+    });
+  }
+
+  /** Full strict type-check. Returns [{line, col, start, length, message}] for the learner's file. */
+  function typeCheck(src) {
+    var ts = global.ts;
+    var sources = {};
+    sources[CHECK_FILE] = src;
+    sources[AMBIENT_FILE] = AMBIENT_SRC;
+    var host = {
+      getSourceFile: function (fn, lang) {
+        var text = sources[fn] != null ? sources[fn] : libs[fn];
+        return text != null ? ts.createSourceFile(fn, text, lang, true) : undefined;
+      },
+      writeFile: function () {},
+      getDefaultLibFileName: function () { return ROOT_LIB; },
+      useCaseSensitiveFileNames: function () { return true; },
+      getCanonicalFileName: function (f) { return f; },
+      getCurrentDirectory: function () { return ''; },
+      getNewLine: function () { return '\n'; },
+      fileExists: function (fn) { return sources[fn] != null || libs[fn] != null; },
+      readFile: function (fn) { return sources[fn] != null ? sources[fn] : libs[fn]; }
+    };
+    var program = ts.createProgram([CHECK_FILE, AMBIENT_FILE], {
+      target: ts.ScriptTarget.ES2020,
+      strict: true,
+      noEmit: true,
+      skipLibCheck: true,
+      lib: [ROOT_LIB]
+    }, host);
+    return ts.getPreEmitDiagnostics(program)
+      .filter(function (d) { return d.file && d.file.fileName === CHECK_FILE && typeof d.start === 'number'; })
+      .map(function (d) {
+        var pos = d.file.getLineAndCharacterOfPosition(d.start);
+        return {
+          line: pos.line + 1,
+          col: pos.character + 1,
+          start: d.start,
+          length: d.length || 1,
+          message: ts.flattenDiagnosticMessageText(d.messageText, ' ')
+        };
+      });
+  }
+
   // ---------- compiler loading ----------
   function loadTypeScript(onReady, onFail) {
     if (global.ts) { onReady(global.ts); return; }
@@ -175,6 +266,7 @@
     var editor = document.getElementById('editor');
     var gutterInner = document.getElementById('gutterInner');
     var hlContent = document.getElementById('hlContent');
+    var errorLayerInner = document.getElementById('errorLayerInner');
     var edstack = document.getElementById('edstack');
     var runBtn = document.getElementById('runBtn');
     var resetBtn = document.getElementById('resetBtn');
@@ -192,21 +284,61 @@
     for (var i0 = 0; i0 < totalSteps; i0++) stepPassed.push(false);
 
     // ---- editor ----
+    var marks = [];      // current type errors, as {line, col, length, message}
+    var charW = 0, lineH = 0;
+
+    /** Character cell size, measured once — the editor font is monospace. */
+    function cell() {
+      if (charW) return;
+      var probe = document.createElement('span');
+      probe.textContent = new Array(41).join('M'); // 40 chars
+      probe.style.cssText = 'position:absolute;visibility:hidden;white-space:pre';
+      hlContent.appendChild(probe);
+      charW = probe.getBoundingClientRect().width / 40;
+      hlContent.removeChild(probe);
+      lineH = parseFloat(getComputedStyle(editor).lineHeight) ||
+              parseFloat(getComputedStyle(editor).fontSize) * 1.55;
+    }
+
     function updateEditorView() {
       var code = editor.value;
       var n = code.split('\n').length;
-      var nums = [];
-      for (var i = 1; i <= n; i++) nums.push(i);
-      gutterInner.textContent = nums.join('\n');
+      var bad = {};
+      marks.forEach(function (m) { bad[m.line] = true; });
+      var g = '';
+      for (var i = 1; i <= n; i++) {
+        g += (i > 1 ? '\n' : '') + '<span class="ln' + (bad[i] ? ' err' : '') + '">' + i + '</span>';
+      }
+      gutterInner.innerHTML = g;
       // trailing space keeps the overlay's height in step when the code ends on a blank line
       hlContent.innerHTML = highlightTS(code) + (code.slice(-1) === '\n' ? ' ' : '');
+      renderMarks();
       syncScroll();
     }
+
+    function renderMarks() {
+      if (!marks.length) { errorLayerInner.innerHTML = ''; return; }
+      cell();
+      errorLayerInner.innerHTML = marks.map(function (m) {
+        var w = Math.max(m.length, 1) * charW;
+        return '<i style="left:' + ((m.col - 1) * charW).toFixed(2) + 'px;top:' +
+          (m.line * lineH).toFixed(2) + 'px;width:' + w.toFixed(2) + 'px" title="' +
+          escapeHtml(m.message) + '"></i>';
+      }).join('');
+    }
+
+    function setMarks(list) {
+      marks = list || [];
+      updateEditorView();
+    }
+
     // transform-based sync: unlike mirroring scrollTop onto a clipped element, a translate
     // can't clamp when the textarea's scrollbars give it a larger scroll range
     function syncScroll() {
-      hlContent.style.transform = 'translate(' + (-editor.scrollLeft) + 'px, ' + (-editor.scrollTop) + 'px)';
-      gutterInner.style.transform = 'translateY(' + (-editor.scrollTop) + 'px)';
+      var x = -editor.scrollLeft, y = -editor.scrollTop;
+      hlContent.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+      errorLayerInner.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+      gutterInner.style.transform = 'translateY(' + y + 'px)';
     }
     var saveTimer = null;
     function saveSoon() {
@@ -230,9 +362,22 @@
 
     // ---- compiler ----
     var tsReady = false;
-    loadTypeScript(function (ts) {
+    function showStatus() {
+      if (!tsReady) return;
+      var suffix = { idle: '', loading: ' · types…', ready: ' · strict types ✓',
+                     failed: ' · ⚠ no type-check' }[libsState] || '';
+      tsStatus.textContent = 'TypeScript ' + global.ts.version + ' ✓' + suffix;
+    }
+    Dojo._onLibs = function () {
+      showStatus();
+      // re-run so a type error in already-restored code surfaces as soon as we can see it
+      if (libsState === 'ready' && editor.value.trim()) runChecks(true);
+    };
+    loadTypeScript(function () {
       tsReady = true;
-      tsStatus.textContent = 'TypeScript ' + ts.version + ' ✓';
+      showStatus();
+      loadLibs();
+      showStatus();
       if (editor.value.trim() && editor.value !== def.scaffold) runChecks(true);
     }, function () {
       tsStatus.textContent = '⚠ could not load TypeScript compiler — are you online?';
@@ -318,12 +463,48 @@
       // step's checks then would bury the real cause under a pile of misleading
       // "not found yet" failures, so stop here and point at the one thing to fix.
       if (r.fatal) {
+        setMarks([]);
         checksPane.innerHTML = html +
           '<div class="bigmsg">Your code didn\'t run, so the step checks are skipped. ' +
           'Fix the error above and run again — the line number is in the message.</div>';
         if (!silent) setTab(0);
         refreshUI();
         return;
+      }
+
+      // Strict type-check. Transpiling alone erases types, so without this the
+      // runner happily passes code that `tsc --strict` rejects — readonly
+      // violations, bad argument types, missing initializers.
+      if (libsState === 'ready') {
+        var diags = [];
+        try { diags = typeCheck(src); } catch (e) { diags = []; }
+        setMarks(diags);
+        if (diags.length) {
+          checksPane.innerHTML = html +
+            '<div class="stephdr">TypeScript · ' + diags.length +
+              (diags.length === 1 ? ' error' : ' errors') + '</div>' +
+            diags.slice(0, 8).map(function (d) {
+              return '<div class="checkline fail">✗ <span class="msg">Line ' + d.line +
+                ', col ' + d.col + ' — ' + escapeHtml(d.message) + '</span></div>';
+            }).join('') +
+            (diags.length > 8 ? '<div class="bigmsg">…and ' + (diags.length - 8) + ' more.</div>' : '') +
+            '<div class="bigmsg">This is exactly what <code>tsc --strict</code> reports. Your code may ' +
+            'still run — types vanish at runtime — but the step checks stay locked until it ' +
+            'type-checks. Offending code is underlined in the editor; hover for the message.</div>';
+          if (!silent) setTab(0);
+          refreshUI();
+          return;
+        }
+      } else {
+        setMarks([]);
+        if (libsState === 'failed') {
+          html += '<div class="checkline fail">⚠ <span class="msg">Type-checking unavailable ' +
+            '(offline?). Behaviour is still checked, but type errors — readonly violations, wrong ' +
+            'types — will slip through here. Run <code>tsc --strict</code> to be sure.</span></div>';
+        } else if (libsState === 'loading') {
+          html += '<div class="checkline"><span class="msg">⏳ Loading the type-checker… type errors ' +
+            'are not being reported yet.</span></div>';
+        }
       }
 
       for (var s = 0; s < steps.length; s++) {
@@ -538,6 +719,7 @@
             '<div id="gutter"><div id="gutterInner">1</div></div>' +
             '<div class="edstack" id="edstack">' +
               '<pre id="highlight" aria-hidden="true"><code id="hlContent"></code></pre>' +
+              '<div id="errorLayer" aria-hidden="true"><div id="errorLayerInner"></div></div>' +
               '<textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>' +
             '</div>' +
           '</div>' +

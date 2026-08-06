@@ -22,6 +22,7 @@
   --ed-gutter-fg: #8a8896; --ed-gutter-bg: #191922; --ed-border: #2a2a36;
   --ed-caret: #ffd479; --ed-sel: rgba(94, 124, 255, 0.35);
   --tk-c: #9aa4b2; --tk-k: #c792ea; --tk-s: #9ece6a; --tk-n: #ff9e64; --tk-t: #f0c674;
+  --sqg: #ff6b6b; --ln-err: #ff9c9c; --ln-err-bg: #2a1418;
   --res-bg: #0f0f16; --res-toolbar: #14141c; --res-toolbar-fg: #b9b7c9;
   --res-tab-fg: #8a8896; --res-tab-active-bg: #1b1b26; --res-tab-active-fg: #ffffff;
   --res-ok: #7ee787; --res-fail-fg: #ff9c9c; --res-fail-bg: #1d1216;
@@ -34,6 +35,7 @@
   --ed-gutter-fg: #5f6873; --ed-gutter-bg: #f2f1ec; --ed-border: #d8d4cc;
   --ed-caret: #0550ae; --ed-sel: rgba(84, 174, 255, 0.35);
   --tk-c: #59636e; --tk-k: #cf222e; --tk-s: #0a3069; --tk-n: #0550ae; --tk-t: #953800;
+  --sqg: #cf222e; --ln-err: #cf222e; --ln-err-bg: #ffebe9;
   --res-bg: #ffffff; --res-toolbar: #f2f1ec; --res-toolbar-fg: #57606a;
   --res-tab-fg: #57606a; --res-tab-active-bg: #eaeef2; --res-tab-active-fg: #1f2328;
   --res-ok: #116329; --res-fail-fg: #82071e; --res-fail-bg: #ffebe9;
@@ -183,6 +185,21 @@ section.work { display: flex; flex-direction: column; min-width: 0; height: 100%
 }
 #editor::selection { background: var(--ed-sel); }
 .edstack.readonly #highlight { opacity: 0.75; }
+
+/* Type-error squiggles. A separate layer positioned by character metrics —
+   the font is monospace, so col/line arithmetic is exact and this never has to
+   interleave with the token spans. */
+#errorLayer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+#errorLayerInner { position: absolute; top: 0; left: 0; padding: 12px 14px; will-change: transform; }
+#errorLayerInner > i {
+  position: absolute; display: block; height: 0;
+  border-bottom: 2px solid var(--sqg);
+}
+#gutterInner .ln { display: inline; }
+#gutterInner .ln.err {
+  color: var(--ln-err); font-weight: 700; background: var(--ln-err-bg);
+  border-radius: 3px; padding: 0 3px; margin: 0 -3px;
+}
 /* token colors only — no bold/italic, so the overlay's metrics match the textarea exactly */
 .tk-c { color: var(--tk-c); }
 .tk-k { color: var(--tk-k); }

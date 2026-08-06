@@ -16,7 +16,23 @@ start index.html
 ```
 
 Requirements: a Chromium-based browser (for the optional **Watch a file** mode) and an
-internet connection on first load, since the TypeScript compiler is fetched from a CDN.
+internet connection on first load, since the TypeScript compiler and its `lib.*.d.ts`
+files are fetched from a CDN (~500 KB, then HTTP-cached).
+
+### Type-checking
+
+Running checks does a full `tsc --strict` type-check, not just a transpile. Errors are
+listed with line and column, the offending code is underlined in the editor (hover for
+the message), and the line number goes red in the gutter. Step checks stay locked until
+the code type-checks — otherwise the runner would pass code that `tsc` rejects, since
+types are erased at runtime and `readonly` violations still *run* perfectly well.
+
+The header shows `strict types ✓` once the checker is live. If the lib files can't be
+fetched it degrades to behaviour-only checks and says so, rather than pretending.
+
+`console` is declared for you with exactly the four methods the runner implements
+(`log`/`info`/`warn`/`error`) — the ES2020 lib has no `console`, and pulling in
+`lib.dom` would be both heavy and a lie about what this sandbox provides.
 
 ### Two ways to work
 
