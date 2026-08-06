@@ -14,6 +14,7 @@
 const vscode = require('vscode');
 const path = require('node:path');
 const fs = require('node:fs');
+const os = require('node:os');
 
 const { runChecks } = require('./src/checker.js');
 const { panelHtml } = require('./src/panel.js');
@@ -38,13 +39,28 @@ function listExercises() {
 
 // ---------------------------------------------------------------- scaffolding
 
+/**
+ * Exercises live in a home folder (default ~/design-pattern-academy), never in
+ * whatever repo happens to be open. The tsconfig and globals file MUST sit next
+ * to the exercise code — the TypeScript server discovers config by walking up
+ * from the file, and extensions can't inject compiler options — so keeping the
+ * whole nest out of the user's projects is the only clean place for it.
+ */
+function academyHome() {
+  let dir = String(
+    vscode.workspace.getConfiguration('designPatternAcademy').get('home') || ''
+  ).trim();
+  if (!dir) return path.join(os.homedir(), 'design-pattern-academy');
+  if (dir === '~') return os.homedir();
+  if (dir.startsWith('~/') || dir.startsWith('~\\')) {
+    return path.join(os.homedir(), dir.slice(2));
+  }
+  return dir;
+}
+
 /** Per-exercise folder: separate tsconfig so two exercises never collide in one global scope. */
 function exerciseUris(def) {
-  const folders = vscode.workspace.workspaceFolders;
-  if (!folders || !folders.length) return null;
-  const base = vscode.workspace.getConfiguration('designPatternAcademy').get('exerciseFolder') ||
-    'design-pattern-academy';
-  const dir = vscode.Uri.joinPath(folders[0].uri, base, def.meta.id);
+  const dir = vscode.Uri.file(path.join(academyHome(), def.meta.id));
   return {
     dir,
     file: vscode.Uri.joinPath(dir, `${def.meta.id}.ts`),
@@ -88,12 +104,6 @@ async function exists(uri) {
 
 async function scaffold(def, { overwrite = false } = {}) {
   const uris = exerciseUris(def);
-  if (!uris) {
-    vscode.window.showErrorMessage(
-      'Design Pattern Academy needs an open folder to put your exercise file in. Open a folder and try again.'
-    );
-    return null;
-  }
   await vscode.workspace.fs.createDirectory(uris.dir);
   const enc = new TextEncoder();
   // config files are always refreshed; the learner's code is never overwritten
@@ -206,9 +216,8 @@ class Session {
 
   async open(def) {
     this.def = def;
-    const uris = await scaffold(def);
-    if (!uris) return;
-    this.uris = uris;
+    this.uris = await scaffold(def);
+    const uris = this.uris;
 
     const doc = await vscode.workspace.openTextDocument(uris.file);
     await vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.One, preview: false });

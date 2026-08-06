@@ -81,16 +81,12 @@ Module._load = function (request) {
 };
 
 // ---------------------------------------------------------------- harness
+// Tests are queued and run at the end so async tests (scaffolding) are awaited
+// like everything else.
 let failures = 0;
-function test(name, fn) {
-  try {
-    fn();
-    console.log('  PASS  ' + name);
-  } catch (e) {
-    failures++;
-    console.log('  FAIL  ' + name + '\n        ' + e.message);
-  }
-}
+const queue = [];
+function section(title) { queue.push({ title }); }
+function test(name, fn) { queue.push({ name, fn }); }
 
 const { runChecks } = require(path.join(ROOT, 'src/checker.js'));
 const { panelHtml } = require(path.join(ROOT, 'src/panel.js'));
@@ -98,7 +94,7 @@ const extension = require(path.join(ROOT, 'extension.js'));
 const pkg = require(path.join(ROOT, 'package.json'));
 
 // ---------------------------------------------------------------- wiring
-console.log('\n== wiring ==');
+section('== wiring ==');
 
 test('package.json declares exactly the commands extension.js registers', () => {
   extension.activate({ subscriptions: [], globalState: { get: (_k, d) => d, update() {} } });
@@ -157,9 +153,23 @@ test('panel renders with a CSP nonce and no un-nonced script', () => {
   assert.ok(!html.includes('<script>'), 'inline scripts must carry a nonce');
 });
 
-// ---------------------------------------------------------------- grading
-console.log('\n== grading: builder ==');
+// ---------------------------------------------------------------- scaffolding
+section('== scaffolding ==');
 const def = require(path.join(ROOT, 'exercises/builder.js'));
+
+test('exercise files live in the home folder, never the open repo', async () => {
+  const os = require('node:os');
+  const uris = await extension.scaffold(def);
+  const home = path.join(os.homedir(), 'design-pattern-academy');
+  assert.ok(uris.file.fsPath.startsWith(home),
+    uris.file.fsPath + ' should be under ' + home);
+  assert.ok(uris.file.fsPath.endsWith(path.join('builder', 'builder.ts')));
+  assert.equal(path.dirname(uris.tsconfig.fsPath), path.dirname(uris.file.fsPath),
+    'tsconfig must sit beside the code — that is how the TS server finds it');
+});
+
+// ---------------------------------------------------------------- grading
+section('== grading: builder ==');
 
 const SOLUTION = `
 type Bread = 'white' | 'wheat' | 'rye';
@@ -254,7 +264,7 @@ test('field declaration order is not required', () => {
 });
 
 // ---------------------------------------------------------------- runtime limits
-console.log('\n== runtime ==');
+section('== runtime ==');
 
 test('constructor parameter properties fail, as they do under node', () => {
   const r = runChecks(def, SOLUTION.replace(
@@ -284,6 +294,22 @@ test('an endless loop is stopped instead of hanging the extension host', () => {
   assert.match(r.error, /more than 5 seconds/);
 });
 
-Module._load = origLoad;
-console.log(failures ? `\n${failures} FAILURE(S)\n` : `\nAll tests passed.\n`);
-process.exitCode = failures ? 1 : 0;
+// ---------------------------------------------------------------- run
+(async () => {
+  for (const item of queue) {
+    if (item.title) {
+      console.log('\n' + item.title);
+      continue;
+    }
+    try {
+      await item.fn();
+      console.log('  PASS  ' + item.name);
+    } catch (e) {
+      failures++;
+      console.log('  FAIL  ' + item.name + '\n        ' + e.message);
+    }
+  }
+  Module._load = origLoad;
+  console.log(failures ? `\n${failures} FAILURE(S)\n` : `\nAll tests passed.\n`);
+  process.exitCode = failures ? 1 : 0;
+})();

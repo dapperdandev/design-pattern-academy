@@ -2,7 +2,7 @@
   "name": "design-pattern-academy",
   "displayName": "Design Pattern Academy",
   "description": "Learn design patterns by implementing them in your own editor, with gated steps and automated checks.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "publisher": "local",
   "license": "UNLICENSED",
@@ -87,10 +87,10 @@
           "default": true,
           "description": "Re-run the exercise checks every time you save the exercise file."
         },
-        "designPatternAcademy.exerciseFolder": {
+        "designPatternAcademy.home": {
           "type": "string",
-          "default": "design-pattern-academy",
-          "description": "Workspace-relative folder where exercise files are created."
+          "default": "",
+          "description": "Absolute folder where exercise files (and their tsconfig) are created — nothing is written into your open workspace. Empty means <home folder>/design-pattern-academy. A leading ~ expands to your home folder."
         }
       }
     }

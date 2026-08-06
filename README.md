@@ -41,13 +41,25 @@ Then, in any open folder: **Design Pattern Academy: Open** from the Command Pale
 | `Design Pattern Academy: Reset Current Exercise` | Restore the starting scaffold and clear progress |
 | `Design Pattern Academy: Open Reference Sheet` | Cheat sheets and the glossary, in Markdown preview |
 
-Checks re-run on every save (`designPatternAcademy.runChecksOnSave`). Exercise files are
-created under `design-pattern-academy/<id>/` in your workspace
-(`designPatternAcademy.exerciseFolder`), each with its own strict `tsconfig.json` so two
-exercises never collide in one global scope.
+Checks re-run on every save (`designPatternAcademy.runChecksOnSave`).
 
-Your code lives in a real file you own — git-track it if you like. Only step and quiz
-progress live in extension state.
+### Where your files go
+
+Exercise files are created under `~/design-pattern-academy/<id>/` — **nothing is written
+into whatever repo you have open**. Each exercise folder holds three files:
+
+- `<id>.ts` — your code
+- `tsconfig.json` — strict, ES2020 lib, no ambient types
+- `dpa-globals.d.ts` — declares `console` (the ES2020 lib doesn't have it)
+
+The two support files must sit beside your code: the TypeScript server discovers
+configuration by walking up the directory tree from the file, and extensions can't inject
+compiler options any other way. Keeping the whole nest in a home folder is what keeps it
+out of your projects.
+
+Move it with the `designPatternAcademy.home` setting (absolute path; `~` expands).
+`git init ~/design-pattern-academy` if you want your solutions in version control. Step
+and quiz progress live in extension state, not in the files.
 
 ## Layout
 
