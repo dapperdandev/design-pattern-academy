@@ -1,0 +1,8 @@
+# keep the VSIX to what the extension actually needs at runtime
+.vscode/**
+.gitignore
+.vscodeignore
+test/**
+sandbox/**
+scratch/**
+**/*.vsix
