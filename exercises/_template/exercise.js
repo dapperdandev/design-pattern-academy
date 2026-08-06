@@ -72,7 +72,7 @@ Dojo.register({
         '<details class="hint"><summary>Hint — one method as a template</summary>' +
         '<pre class="snippet">// give the shape, not the answer</pre></details>' +
         '<p><b>Checkpoint:</b></p>' +
-        '<pre class="snippet">console.log(new Thing().toString());</pre>' +
+        '<pre class="snippet">console.log(new Thing().listParts());</pre>' +
         '<div class="expected">a default thing</div>',
       checks: [
         {
@@ -82,8 +82,8 @@ Dojo.register({
           }
         },
         {
-          name: 'toString() reads right',
-          run: function (c) { return c.eq(new c.g.Thing().toString(), c.expect.plain); }
+          name: 'listParts() reads right',
+          run: function (c) { return c.eq(new c.g.Thing().listParts(), c.expect.plain); }
         }
       ]
     }

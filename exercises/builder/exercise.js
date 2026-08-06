@@ -93,18 +93,21 @@ Dojo.register({
           '<code>decks = 1</code> (a club sandwich is a double-decker), ' +
           '<code>cheese: Cheese = \'none\'</code>, <code>toppings: string[] = []</code>, ' +
           '<code>toasted = false</code></li>' +
-        '<li>A <code>toString()</code> method so you can see what you built — formatting isn\'t the ' +
+        '<li>A <code>listParts()</code> method so you can see what you built — formatting isn\'t the ' +
           'lesson, so copy this body:</li>' +
         '</ul>' +
-        '<pre class="snippet">toString(): string {\n' +
+        '<pre class="snippet">listParts(): string {\n' +
         '  return `${this.bread}, ${this.decks} deck(s), cheese: ${this.cheese}, ` +\n' +
         '    `toppings: ${this.toppings.join(\' + \') || \'none\'}, ${this.toasted ? \'toasted\' : \'not toasted\'}`;\n' +
         '}</pre>' +
-        '<p class="why"><code>toString()</code> is the standard JavaScript hook for turning an object ' +
-        'into text — nothing invented here. Calling it explicitly keeps the output identical in the ' +
-        'browser and in Node.</p>' +
+        '<p class="why">The name comes from the ' +
+        '<a href="https://refactoring.guru/design-patterns/builder/typescript/example" target="_blank">' +
+        'reference TypeScript implementation</a>, which calls the product\'s text method ' +
+        '<code>listParts()</code> — so your code lines up with the version you\'ll compare against at ' +
+        'the end. Returning the string (rather than printing inside the method) keeps the product free ' +
+        'of I/O and lets you log it wherever you like.</p>' +
         '<p><b>Checkpoint</b> — add this line and hit <i>Run checks</i>:</p>' +
-        '<pre class="snippet">console.log(new Sandwich().toString());</pre>' +
+        '<pre class="snippet">console.log(new Sandwich().listParts());</pre>' +
         '<div class="expected">white, 1 deck(s), cheese: none, toppings: none, not toasted</div>',
       checks: [
         {
@@ -124,8 +127,8 @@ Dojo.register({
           }
         },
         {
-          name: 'toString() reads right',
-          run: function (c) { return c.eq(new c.g.Sandwich().toString(), c.expect.plain); }
+          name: 'listParts() reads right',
+          run: function (c) { return c.eq(new c.g.Sandwich().listParts(), c.expect.plain); }
         }
       ]
     },
@@ -216,7 +219,7 @@ Dojo.register({
         '<p><b>Checkpoint</b> — a customer with opinions:</p>' +
         '<pre class="snippet">const builder = new DeliSandwichBuilder();\n' +
         'const custom = builder.setBread(\'rye\').addDeck().addTopping(\'pastrami\').build();\n' +
-        'console.log(custom.toString());</pre>' +
+        'console.log(custom.listParts());</pre>' +
         '<div class="expected">rye, 2 deck(s), cheese: none, toppings: pastrami, not toasted</div>',
       checks: [
         {
@@ -241,7 +244,7 @@ Dojo.register({
           name: 'the pastrami-on-rye order comes out right',
           run: function (c) {
             var got = new c.g.DeliSandwichBuilder()
-              .setBread('rye').addDeck().addTopping('pastrami').build().toString();
+              .setBread('rye').addDeck().addTopping('pastrami').build().listParts();
             return c.eq(got, c.expect.custom);
           }
         },
@@ -250,7 +253,7 @@ Dojo.register({
           run: function (c) {
             var b = new c.g.DeliSandwichBuilder();
             b.setBread('rye').addTopping('mustard').toast().build();
-            var got = b.build().toString();
+            var got = b.build().listParts();
             if (got !== c.expect.plain) {
               return 'After build(), the next build() should be a fresh default sandwich — got "' +
                 got + '". (build() should hand over the sandwich, then reset().)';
@@ -283,8 +286,8 @@ Dojo.register({
         '}</pre></details>' +
         '<p><b>Checkpoint:</b></p>' +
         '<pre class="snippet">const artist = new SandwichArtist(builder);\n' +
-        'console.log(artist.makeGrilledCheese().toString());\n' +
-        'console.log(artist.makeClubSandwich().toString());</pre>' +
+        'console.log(artist.makeGrilledCheese().listParts());\n' +
+        'console.log(artist.makeClubSandwich().listParts());</pre>' +
         '<div class="expected">white, 1 deck(s), cheese: cheddar, toppings: none, toasted\n' +
         'wheat, 2 deck(s), cheese: swiss, toppings: turkey + bacon, toasted</div>',
       checks: [
@@ -307,7 +310,7 @@ Dojo.register({
           name: 'makeGrilledCheese() recipe',
           run: function (c) {
             var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder())
-              .makeGrilledCheese().toString();
+              .makeGrilledCheese().listParts();
             if (got !== c.expect.grilledCheese) {
               return 'Expected "' + c.expect.grilledCheese + '" but got "' + got +
                 '". (Recipe: reset, white bread, cheddar, toasted.)';
@@ -318,7 +321,7 @@ Dojo.register({
           name: 'makeClubSandwich() recipe',
           run: function (c) {
             var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder())
-              .makeClubSandwich().toString();
+              .makeClubSandwich().listParts();
             if (got !== c.expect.club) {
               return 'Expected "' + c.expect.club + '" but got "' + got +
                 '". (Recipe: reset, wheat, one extra deck, swiss, turkey, bacon, toasted.)';
