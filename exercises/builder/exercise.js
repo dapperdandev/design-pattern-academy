@@ -46,10 +46,10 @@ Dojo.register({
   captures: ['Sandwich', 'DeliSandwichBuilder', 'SandwichArtist'],
 
   expected: {
-    plain: 'Fresh white sandwich, 1 deck(s), no cheese',
-    custom: 'Fresh rye sandwich, 2 deck(s), no cheese + pastrami',
-    grilledCheese: 'Toasted white sandwich, 1 deck(s), cheddar cheese',
-    club: 'Toasted wheat sandwich, 2 deck(s), swiss cheese + turkey + bacon'
+    plain: 'white, 1 deck(s), cheese: none, toppings: none, not toasted',
+    custom: 'rye, 2 deck(s), cheese: none, toppings: pastrami, not toasted',
+    grilledCheese: 'white, 1 deck(s), cheese: cheddar, toppings: none, toasted',
+    club: 'wheat, 2 deck(s), cheese: swiss, toppings: turkey + bacon, toasted'
   },
 
   scaffold: [
@@ -93,22 +93,19 @@ Dojo.register({
           '<code>decks = 1</code> (a club sandwich is a double-decker), ' +
           '<code>cheese: Cheese = \'none\'</code>, <code>toppings: string[] = []</code>, ' +
           '<code>toasted = false</code></li>' +
-        '<li>A <code>describe(): string</code> method — formatting isn\'t the lesson, so copy this body:</li>' +
+        '<li>A <code>toString()</code> method so you can see what you built — formatting isn\'t the ' +
+          'lesson, so copy this body:</li>' +
         '</ul>' +
-        '<pre class="snippet">describe(): string {\n' +
-        '  const parts = [\n' +
-        '    this.toasted ? \'Toasted\' : \'Fresh\',\n' +
-        '    this.bread,\n' +
-        '    \'sandwich,\',\n' +
-        '    `${this.decks} deck(s),`,\n' +
-        '    this.cheese === \'none\' ? \'no cheese\' : `${this.cheese} cheese`,\n' +
-        '  ];\n' +
-        '  if (this.toppings.length) parts.push(`+ ${this.toppings.join(\' + \')}`);\n' +
-        '  return parts.join(\' \');\n' +
+        '<pre class="snippet">toString(): string {\n' +
+        '  return `${this.bread}, ${this.decks} deck(s), cheese: ${this.cheese}, ` +\n' +
+        '    `toppings: ${this.toppings.join(\' + \') || \'none\'}, ${this.toasted ? \'toasted\' : \'not toasted\'}`;\n' +
         '}</pre>' +
+        '<p class="why"><code>toString()</code> is the standard JavaScript hook for turning an object ' +
+        'into text — nothing invented here. Calling it explicitly keeps the output identical in the ' +
+        'browser and in Node.</p>' +
         '<p><b>Checkpoint</b> — add this line and hit <i>Run checks</i>:</p>' +
-        '<pre class="snippet">console.log(new Sandwich().describe());</pre>' +
-        '<div class="expected">Fresh white sandwich, 1 deck(s), no cheese</div>',
+        '<pre class="snippet">console.log(new Sandwich().toString());</pre>' +
+        '<div class="expected">white, 1 deck(s), cheese: none, toppings: none, not toasted</div>',
       checks: [
         {
           name: 'class Sandwich exists',
@@ -127,8 +124,8 @@ Dojo.register({
           }
         },
         {
-          name: 'describe() reads right',
-          run: function (c) { return c.eq(new c.g.Sandwich().describe(), c.expect.plain); }
+          name: 'toString() reads right',
+          run: function (c) { return c.eq(new c.g.Sandwich().toString(), c.expect.plain); }
         }
       ]
     },
@@ -219,8 +216,8 @@ Dojo.register({
         '<p><b>Checkpoint</b> — a customer with opinions:</p>' +
         '<pre class="snippet">const builder = new DeliSandwichBuilder();\n' +
         'const custom = builder.setBread(\'rye\').addDeck().addTopping(\'pastrami\').build();\n' +
-        'console.log(custom.describe());</pre>' +
-        '<div class="expected">Fresh rye sandwich, 2 deck(s), no cheese + pastrami</div>',
+        'console.log(custom.toString());</pre>' +
+        '<div class="expected">rye, 2 deck(s), cheese: none, toppings: pastrami, not toasted</div>',
       checks: [
         {
           name: 'DeliSandwichBuilder implements SandwichBuilder',
@@ -244,7 +241,7 @@ Dojo.register({
           name: 'the pastrami-on-rye order comes out right',
           run: function (c) {
             var got = new c.g.DeliSandwichBuilder()
-              .setBread('rye').addDeck().addTopping('pastrami').build().describe();
+              .setBread('rye').addDeck().addTopping('pastrami').build().toString();
             return c.eq(got, c.expect.custom);
           }
         },
@@ -253,7 +250,7 @@ Dojo.register({
           run: function (c) {
             var b = new c.g.DeliSandwichBuilder();
             b.setBread('rye').addTopping('mustard').toast().build();
-            var got = b.build().describe();
+            var got = b.build().toString();
             if (got !== c.expect.plain) {
               return 'After build(), the next build() should be a fresh default sandwich — got "' +
                 got + '". (build() should hand over the sandwich, then reset().)';
@@ -286,10 +283,10 @@ Dojo.register({
         '}</pre></details>' +
         '<p><b>Checkpoint:</b></p>' +
         '<pre class="snippet">const artist = new SandwichArtist(builder);\n' +
-        'console.log(artist.makeGrilledCheese().describe());\n' +
-        'console.log(artist.makeClubSandwich().describe());</pre>' +
-        '<div class="expected">Toasted white sandwich, 1 deck(s), cheddar cheese\n' +
-        'Toasted wheat sandwich, 2 deck(s), swiss cheese + turkey + bacon</div>',
+        'console.log(artist.makeGrilledCheese().toString());\n' +
+        'console.log(artist.makeClubSandwich().toString());</pre>' +
+        '<div class="expected">white, 1 deck(s), cheese: cheddar, toppings: none, toasted\n' +
+        'wheat, 2 deck(s), cheese: swiss, toppings: turkey + bacon, toasted</div>',
       checks: [
         {
           name: 'class SandwichArtist exists',
@@ -310,7 +307,7 @@ Dojo.register({
           name: 'makeGrilledCheese() recipe',
           run: function (c) {
             var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder())
-              .makeGrilledCheese().describe();
+              .makeGrilledCheese().toString();
             if (got !== c.expect.grilledCheese) {
               return 'Expected "' + c.expect.grilledCheese + '" but got "' + got +
                 '". (Recipe: reset, white bread, cheddar, toasted.)';
@@ -321,7 +318,7 @@ Dojo.register({
           name: 'makeClubSandwich() recipe',
           run: function (c) {
             var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder())
-              .makeClubSandwich().describe();
+              .makeClubSandwich().toString();
             if (got !== c.expect.club) {
               return 'Expected "' + c.expect.club + '" but got "' + got +
                 '". (Recipe: reset, wheat, one extra deck, swiss, turkey, bacon, toasted.)';
@@ -341,10 +338,10 @@ Dojo.register({
           'reads like a sentence.</li>' +
         '<li><b>Director drives the builder</b> — the menu. Recipes live in one place; callers ' +
           'can\'t get them wrong.</li></ul>' +
-        '<div class="expected">Fresh white sandwich, 1 deck(s), no cheese\n' +
-        'Fresh rye sandwich, 2 deck(s), no cheese + pastrami\n' +
-        'Toasted white sandwich, 1 deck(s), cheddar cheese\n' +
-        'Toasted wheat sandwich, 2 deck(s), swiss cheese + turkey + bacon</div>' +
+        '<div class="expected">white, 1 deck(s), cheese: none, toppings: none, not toasted\n' +
+        'rye, 2 deck(s), cheese: none, toppings: pastrami, not toasted\n' +
+        'white, 1 deck(s), cheese: cheddar, toppings: none, toasted\n' +
+        'wheat, 2 deck(s), cheese: swiss, toppings: turkey + bacon, toasted</div>' +
         '<p class="why">Per the GoF and ' +
         '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">Refactoring.Guru</a>, ' +
         'the Director is <i>optional</i> — client code may call the steps itself. Worth saying in ' +
