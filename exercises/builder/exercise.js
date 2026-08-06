@@ -73,10 +73,10 @@
     // What each order should contain. Fields, not formatted text — so the checks
     // test the pattern's behaviour and nothing depends on how it's printed.
     expected: {
-      plain:         { bread: 'white', decks: 1, cheese: 'none',    toppings: [],                    toasted: false },
-      custom:        { bread: 'rye',   decks: 2, cheese: 'none',    toppings: ['pastrami'],          toasted: false },
-      grilledCheese: { bread: 'white', decks: 1, cheese: 'cheddar', toppings: [],                    toasted: true },
-      club:          { bread: 'wheat', decks: 2, cheese: 'swiss',   toppings: ['turkey', 'bacon'],   toasted: true }
+      plain:         { bread: 'white', decks: 1, cheese: null,      toppings: [],                  toasted: false },
+      custom:        { bread: 'rye',   decks: 2, cheese: null,      toppings: ['pastrami'],        toasted: false },
+      grilledCheese: { bread: 'white', decks: 1, cheese: 'cheddar', toppings: [],                  toasted: true },
+      club:          { bread: 'wheat', decks: 2, cheese: 'swiss',   toppings: ['turkey', 'bacon'], toasted: true }
     },
 
     scaffold: [
@@ -116,17 +116,24 @@
           '"telescoping constructor"</a> problem Builder solves.</p>' +
           '<p><b>Write:</b></p><ul>' +
           '<li>Type aliases: <code>Bread = \'white\' | \'wheat\' | \'rye\'</code> and ' +
-            '<code>Cheese = \'none\' | \'cheddar\' | \'swiss\'</code></li>' +
+            '<code>Cheese = \'cheddar\' | \'swiss\'</code></li>' +
           '<li><code>class Sandwich</code> with five fields, each with a default: ' +
             '<code>bread: Bread = \'white\'</code>, <code>decks = 1</code> (a club sandwich is a ' +
-            'double-decker), <code>cheese: Cheese = \'none\'</code>, ' +
+            'double-decker), <code>cheese: Cheese | null = null</code>, ' +
             '<code>toppings: string[] = []</code>, <code>toasted = false</code></li></ul>' +
+          '<p class="why">Note what the <code>Cheese</code> type does <i>not</i> contain: a member ' +
+          'meaning "no cheese". Absence isn\'t a kind of cheese, so it\'s <code>null</code> rather ' +
+          'than a sentinel like <code>\'none\'</code> — and <code>setCheese()</code> then can\'t be ' +
+          'called with a non-cheese. Give it an explicit <code>= null</code> rather than making the ' +
+          'field optional: an optional field with no initializer doesn\'t exist at all once ' +
+          'transpiled here, but does exist as <code>undefined</code> under <code>node</code>, so the ' +
+          'two disagree.</p>' +
           '<p class="why">Leave the fields mutable — no <code>readonly</code>. The builder\'s whole ' +
           'job in step 3 is to set them one at a time, and <code>readonly</code> would reject that ' +
           'under <code>tsc --strict</code>.</p>' +
           '<p><b>Checkpoint</b> — add this line and hit <i>Run checks</i>:</p>' +
           '<pre class="snippet">console.log(new Sandwich());</pre>' +
-          '<div class="expected">Sandwich { bread: \'white\', decks: 1, cheese: \'none\', toppings: [], toasted: false }</div>' +
+          '<div class="expected">Sandwich { bread: \'white\', decks: 1, cheese: null, toppings: [], toasted: false }</div>' +
           '<p class="why">Logging the object is all you need to see your work — no formatting method ' +
           'required. <code>node</code> prints the same fields, wrapped across several lines.</p>',
         checks: [
@@ -235,7 +242,7 @@
           '<pre class="snippet">const builder = new DeliSandwichBuilder();\n' +
           'const custom = builder.setBread(\'rye\').addDeck().addTopping(\'pastrami\').build();\n' +
           'console.log(custom);</pre>' +
-          '<div class="expected">Sandwich { bread: \'rye\', decks: 2, cheese: \'none\', toppings: [ \'pastrami\' ], toasted: false }</div>',
+          '<div class="expected">Sandwich { bread: \'rye\', decks: 2, cheese: null, toppings: [ \'pastrami\' ], toasted: false }</div>',
         checks: [
           {
             name: 'DeliSandwichBuilder implements SandwichBuilder',
