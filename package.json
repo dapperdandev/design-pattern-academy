@@ -1,0 +1,69 @@
+{
+  "name": "design-pattern-academy",
+  "displayName": "Design Pattern Academy",
+  "description": "Learn design patterns by implementing them in your own editor, with gated steps and automated checks.",
+  "version": "0.1.0",
+  "private": true,
+  "publisher": "local",
+  "license": "UNLICENSED",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Education"
+  ],
+  "keywords": [
+    "design patterns",
+    "typescript",
+    "learning"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "designPatternAcademy.open",
+        "title": "Open",
+        "category": "Design Pattern Academy"
+      },
+      {
+        "command": "designPatternAcademy.runChecks",
+        "title": "Run Checks",
+        "category": "Design Pattern Academy"
+      },
+      {
+        "command": "designPatternAcademy.resetExercise",
+        "title": "Reset Current Exercise",
+        "category": "Design Pattern Academy"
+      },
+      {
+        "command": "designPatternAcademy.openReference",
+        "title": "Open Reference Sheet",
+        "category": "Design Pattern Academy"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "designPatternAcademy.runChecks",
+        "key": "ctrl+alt+enter",
+        "mac": "cmd+alt+enter",
+        "when": "editorTextFocus && resourceExtname == .ts"
+      }
+    ],
+    "configuration": {
+      "title": "Design Pattern Academy",
+      "properties": {
+        "designPatternAcademy.runChecksOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Re-run the exercise checks every time you save the exercise file."
+        },
+        "designPatternAcademy.exerciseFolder": {
+          "type": "string",
+          "default": "design-pattern-academy",
+          "description": "Workspace-relative folder where exercise files are created."
+        }
+      }
+    }
+  }
+}

@@ -1,43 +1,44 @@
 /**
  * Exercise 0001 — Builder pattern, sandwich shop edition.
- * Content only. All app machinery lives in app/engine.js.
+ *
+ * Content only: prose, expectations, checks, quiz. The extension supplies the
+ * lesson panel and the gating; VS Code supplies the editor and type-checking.
  *
  * The product deliberately has NO text-rendering method: it would teach nothing
  * about the pattern, and it made every check brittle to formatting. Checks
  * assert the fields the builder actually set instead.
  */
-(function () {
-  'use strict';
+'use strict';
 
-  var FIELDS = ['bread', 'decks', 'cheese', 'toasted'];
+var FIELDS = ['bread', 'decks', 'cheese', 'toasted'];
 
-  /**
-   * A builder left part-way through an order — configured, never built. Handing
-   * this to the director is what proves each recipe starts with reset(); with a
-   * fresh builder the missing reset() hides, because build() resets afterwards.
-   */
-  function dirtyBuilder(c) {
-    var b = new c.g.DeliSandwichBuilder();
-    b.setBread('rye').addDeck().addTopping('pastrami');
-    return b;
-  }
+/**
+ * A builder left part-way through an order — configured, never built. Handing
+ * this to the director is what proves each recipe starts with reset(); with a
+ * fresh builder the missing reset() hides, because build() resets afterwards.
+ */
+function dirtyBuilder(c) {
+  var b = new c.g.DeliSandwichBuilder();
+  b.setBread('rye').addDeck().addTopping('pastrami');
+  return b;
+}
 
-  /** Compare a built sandwich against an expected field set. Returns a message, or null when it matches. */
-  function wrong(got, want) {
-    if (!got || typeof got !== 'object') return 'build() did not return a Sandwich.';
-    for (var i = 0; i < FIELDS.length; i++) {
-      var k = FIELDS[i];
-      if (got[k] !== want[k]) {
-        return k + ' should be ' + JSON.stringify(want[k]) + ' but was ' + JSON.stringify(got[k]) + '.';
-      }
+/** Compare a built sandwich against an expected field set. Returns a message, or null when it matches. */
+function wrong(got, want) {
+  if (!got || typeof got !== 'object') return 'build() did not return a Sandwich.';
+  for (var i = 0; i < FIELDS.length; i++) {
+    var k = FIELDS[i];
+    if (got[k] !== want[k]) {
+      return k + ' should be ' + JSON.stringify(want[k]) + ' but was ' + JSON.stringify(got[k]) + '.';
     }
-    var g = (got.toppings || []).join(' + ') || '(none)';
-    var w = (want.toppings || []).join(' + ') || '(none)';
-    if (g !== w) return 'toppings should be ' + w + ' but were ' + g + '.';
-    return null;
   }
+  var g = (got.toppings || []).join(' + ') || '(none)';
+  var w = (want.toppings || []).join(' + ') || '(none)';
+  if (g !== w) return 'toppings should be ' + w + ' but were ' + g + '.';
+  return null;
+}
 
-  Dojo.register({
+module.exports = {
     meta: {
       id: 'builder',
       number: '0001',
@@ -51,9 +52,10 @@
       missionNote: '<b>Mission tie-in:</b> everything you write here becomes the <i>Example</i> and ' +
         '<i>Dissection</i> sections of <code>docs/posts/drafts/builder-pattern.md</code> in the blog ' +
         'repo. Singleton was one class; Builder is your first pattern where <i>roles collaborate</i>.',
-      howto: 'Work in the editor →, or click <b>Watch a file</b> to code in VS Code ' +
-        '(<code>blog/sandbox/builder-pattern.ts</code>) with live checking here. You can also run ' +
-        'that file directly: <code>node sandbox/builder-pattern.ts</code>.',
+      howto: 'Write your code in <code>builder.ts</code> beside this panel. Every save re-runs the ' +
+        'checks, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Enter</kbd>. Type errors come from ' +
+        'VS Code itself — if it\'s underlined in the editor, fix that first. You can also run the ' +
+        'file directly: <code>node builder.ts</code>.',
       primarySource: {
         url: 'https://refactoring.guru/design-patterns/builder',
         label: 'Builder — Refactoring.Guru',
@@ -61,8 +63,8 @@
               '<i>Design Patterns</i>, Gamma, Helm, Johnson &amp; Vlissides (1994).'
       },
       references: [
-        { href: '../../reference/builder-pattern.html', label: 'Builder cheat sheet' },
-        { href: '../../reference/design-patterns-glossary.html', label: 'Design-patterns glossary' }
+        { name: 'builder-pattern.md', label: 'Builder cheat sheet' },
+        { name: 'design-patterns-glossary.md', label: 'Design-patterns glossary' }
       ],
       finale: '🎉 <b>All checks green.</b> To make it stick:' +
         '<ul style="margin:8px 0 0; padding-left:18px;">' +
@@ -433,5 +435,4 @@
           'Singleton — your published post.)'
       }
     ]
-  });
-})();
+};

@@ -1,10 +1,14 @@
 /**
- * TEMPLATE — copy this folder to exercises/<your-id>/ and fill it in.
- * Then add the folder name to exercises/manifest.js so it shows on the catalog.
+ * TEMPLATE — copy to exercises/<your-id>.js and fill it in. That's the whole
+ * install step: the extension discovers every non-underscored .js in this folder.
  *
- * This file is content only: prose, expected output, checks, quiz. Every bit of
- * app machinery (editor, highlighting, TS compile, gating, persistence) is in
- * app/engine.js and needs no changes to add an exercise.
+ * This file is content only: prose, expectations, checks, quiz. The extension
+ * supplies the lesson panel, gating and persistence; VS Code supplies the editor,
+ * IntelliSense and strict type-checking. Adding a pattern touches nothing else.
+ *
+ * Do NOT write checks for type errors — VS Code reports those itself, and the
+ * extension already blocks the step checks until the file type-checks. Your
+ * checks are only about behaviour: does the pattern actually work?
  *
  * ── The check contract ────────────────────────────────────────────────
  * Each check gets a ctx and returns a FAILURE MESSAGE string, or nothing to pass.
@@ -28,27 +32,35 @@
  * text. Requiring the learner to write a toString-style method just so a check
  * can compare strings adds copy-paste that teaches nothing about the pattern,
  * and makes every check brittle to formatting. `console.log(obj)` already
- * renders an object readably in both this console and Node.
+ * renders an object readably in the panel and under `node`.
+ *
+ * Node runs the exercise file with type stripping, so `enum` and constructor
+ * parameter properties fail at runtime. Warn the learner in the prose.
  */
-Dojo.register({
+'use strict';
+
+module.exports = {
   meta: {
-    id: 'my-pattern',                  // unique; also the localStorage namespace
-    number: '0002',                    // sort order on the catalog
+    id: 'my-pattern',                  // unique; also the file name and state namespace
+    number: '0002',                    // sort order in the exercise picker
     title: 'The Example Pattern',
-    heading: 'A short imperative hook',  // <h2> in the left panel
+    heading: 'A short imperative hook',  // <h1> in the panel
     emoji: '🧩',
     domain: 'Some concrete domain',
     category: 'Creational',            // Creational | Structural | Behavioral
-    blurb: 'One or two sentences for the catalog card.',
+    blurb: 'One or two sentences for the exercise picker.',
     missionNote: '<b>Mission tie-in:</b> why this exercise exists, and what it feeds.',
-    howto: 'Work in the editor →, or click <b>Watch a file</b> to code in your own editor.',
+    howto: 'Write your code in <code>my-pattern.ts</code> beside this panel. Every save re-runs ' +
+      'the checks.',
     primarySource: {
       url: 'https://refactoring.guru/design-patterns/',
       label: 'Pattern — Refactoring.Guru',
       note: '(what to trust it for).'
     },
     references: [
-      { href: '../../reference/design-patterns-glossary.html', label: 'Design-patterns glossary' }
+      // `name` opens reference/<name> in VS Code's Markdown preview;
+      // use `href` instead for an external URL.
+      { name: 'design-patterns-glossary.md', label: 'Design-patterns glossary' }
     ],
     finale: '🎉 <b>All checks green.</b> What to do next to make it stick.'
   },
@@ -102,7 +114,7 @@ Dojo.register({
     }
   ],
 
-  // Optional. When present the engine appends it as a final gated step.
+  // Optional. When present it becomes a final gated step.
   // Keep option strings the same length — formatting must not hint at the answer.
   quiz: [
     {
@@ -112,4 +124,4 @@ Dojo.register({
       explain: 'Why that\'s right, and why the tempting wrong one is wrong.'
     }
   ]
-});
+};

@@ -2,9 +2,15 @@
 Thumbs.db
 Desktop.ini
 .DS_Store
-.vscode/
 .idea/
+
+# workspace used by the F5 launch config for trying the extension out
+sandbox/
 
 # scratch reference solutions — never ship these next to the exercises
 scratch/
 *.solution.ts
+
+# not used (no build, no dependencies) but harmless insurance
+node_modules/
+*.vsix

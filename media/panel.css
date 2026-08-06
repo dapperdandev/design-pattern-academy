@@ -1,0 +1,154 @@
+/* Everything is expressed in VS Code's own theme variables, so the panel matches
+   the user's colour theme without any theme handling of our own. */
+
+body {
+  margin: 0;
+  padding: 0 0 2.5rem;
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: var(--vscode-editor-background);
+  line-height: 1.55;
+}
+* { box-sizing: border-box; }
+
+header {
+  position: sticky; top: 0; z-index: 3;
+  padding: 12px 16px 10px;
+  background: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.crumb { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; opacity: .65; }
+header h1 { font-size: 17px; margin: 4px 0 10px; font-weight: 600; }
+.bar { display: flex; align-items: center; gap: 8px; }
+.spacer { flex: 1; }
+.pill {
+  font-size: 11.5px; padding: 2px 9px; border-radius: 999px;
+  background: var(--vscode-badge-background); color: var(--vscode-badge-foreground);
+}
+
+button {
+  font-family: inherit; font-size: 12.5px; padding: 5px 11px; cursor: pointer;
+  border: 1px solid var(--vscode-button-border, transparent); border-radius: 4px;
+  background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground);
+}
+button:hover { background: var(--vscode-button-secondaryHoverBackground); }
+button.primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+button.primary:hover { background: var(--vscode-button-hoverBackground); }
+button:disabled { opacity: .55; cursor: default; }
+
+main { padding: 14px 16px 0; max-width: 46rem; }
+a, .linkish {
+  color: var(--vscode-textLink-foreground); background: none; border: 0; padding: 0;
+  font: inherit; cursor: pointer; text-decoration: none;
+}
+a:hover, .linkish:hover { text-decoration: underline; color: var(--vscode-textLink-activeForeground); }
+
+.note {
+  font-size: 12.5px; padding: 8px 11px; margin: 0 0 14px;
+  border-left: 3px solid var(--vscode-textLink-foreground);
+  background: var(--vscode-textBlockQuote-background);
+}
+.howto { font-size: 12.5px; opacity: .85; margin: 0 0 14px; }
+.dim { opacity: .7; }
+
+/* ---------- results ---------- */
+.results { margin: 0 0 16px; font-size: 12.5px; }
+.results.busy { opacity: .55; }
+.results h3 {
+  font-size: 11px; text-transform: uppercase; letter-spacing: .07em;
+  margin: 0 0 6px; opacity: .7; font-weight: 700;
+}
+.line { display: flex; gap: 7px; padding: 4px 7px; border-radius: 4px; margin: 2px 0; align-items: baseline; }
+.line .mark { flex: 0 0 auto; font-weight: 700; }
+.line.ok { color: var(--vscode-testing-iconPassed, #3fb950); }
+.line.fail {
+  color: var(--vscode-testing-iconFailed, #f85149);
+  background: var(--vscode-inputValidation-errorBackground, rgba(248, 81, 73, .1));
+}
+.line .msg { color: var(--vscode-foreground); opacity: .95; }
+.hint { margin: 8px 0 0; opacity: .8; }
+.hint code { font-size: .92em; }
+
+/* ---------- steps ---------- */
+.step {
+  border: 1px solid var(--vscode-panel-border); border-radius: 6px;
+  margin: 0 0 10px; overflow: hidden;
+}
+.step > .head {
+  display: flex; align-items: center; gap: 9px; width: 100%; text-align: left;
+  padding: 9px 11px; border: 0; border-radius: 0; background: var(--vscode-editorWidget-background);
+  font-size: 13px; font-weight: 600; color: var(--vscode-foreground);
+}
+.step > .head:hover { background: var(--vscode-list-hoverBackground); }
+.step .status { flex: 0 0 1.1em; }
+.step .title { flex: 1; }
+.step .chip {
+  font-size: 10.5px; font-weight: 500; padding: 1px 6px; border-radius: 3px;
+  background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); opacity: .9;
+}
+.step .body { display: none; padding: 2px 13px 13px; border-top: 1px solid var(--vscode-panel-border); }
+.step.open .body { display: block; }
+.step.locked > .head { opacity: .5; cursor: not-allowed; }
+.step.passed > .head .status { color: var(--vscode-testing-iconPassed, #3fb950); }
+
+.step p { margin: 9px 0; }
+.step ul { margin: 8px 0; padding-left: 20px; }
+.step li { margin: 4px 0; }
+.why { font-size: 12.5px; opacity: .8; font-style: italic; }
+
+code, pre {
+  font-family: var(--vscode-editor-font-family);
+  font-size: calc(var(--vscode-editor-font-size) * 0.92);
+}
+code {
+  background: var(--vscode-textCodeBlock-background); padding: 1px 4px; border-radius: 3px;
+}
+pre.snippet {
+  background: var(--vscode-textCodeBlock-background);
+  border: 1px solid var(--vscode-panel-border); border-radius: 5px;
+  padding: 9px 11px; overflow-x: auto; margin: 8px 0; line-height: 1.5;
+}
+.expected {
+  font-family: var(--vscode-editor-font-family);
+  font-size: calc(var(--vscode-editor-font-size) * 0.9);
+  background: var(--vscode-terminal-background, var(--vscode-editor-background));
+  border: 1px dashed var(--vscode-panel-border);
+  color: var(--vscode-terminal-ansiGreen, #3fb950);
+  border-radius: 5px; padding: 7px 10px; margin: 8px 0; white-space: pre; overflow-x: auto;
+}
+details { margin: 8px 0; }
+summary { cursor: pointer; color: var(--vscode-textLink-foreground); font-size: 12.5px; }
+details[open] summary { margin-bottom: 6px; }
+
+/* ---------- quiz ---------- */
+.quiz-q { margin: 12px 0 16px; }
+.quiz-q .qtext { font-weight: 600; margin-bottom: 7px; }
+.quiz-q .opt {
+  display: block; width: 100%; text-align: left; margin: 4px 0;
+  font-family: var(--vscode-editor-font-family);
+  font-size: calc(var(--vscode-editor-font-size) * 0.92);
+}
+.quiz-q .opt.correct {
+  border-color: var(--vscode-testing-iconPassed, #3fb950);
+  color: var(--vscode-testing-iconPassed, #3fb950); font-weight: 700;
+}
+.quiz-q .opt.wrong {
+  border-color: var(--vscode-testing-iconFailed, #f85149);
+  color: var(--vscode-testing-iconFailed, #f85149);
+}
+.quiz-q .expl { display: none; font-size: 12.5px; opacity: .8; margin-top: 6px; }
+.quiz-q.answered .expl { display: block; }
+
+/* ---------- finale + sources ---------- */
+.finale {
+  display: none; margin: 16px 0; padding: 11px 13px; border-radius: 6px; font-size: 12.5px;
+  border: 1px solid var(--vscode-testing-iconPassed, #3fb950);
+  background: var(--vscode-textBlockQuote-background);
+}
+.finale ul { margin: 8px 0 0; padding-left: 18px; }
+.sources {
+  margin: 22px 0 0; padding-top: 12px; font-size: 12.5px; opacity: .9;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+.sources p { margin: 6px 0; }
