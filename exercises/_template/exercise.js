@@ -21,8 +21,14 @@
  *
  * Steps are gated in order: a step unlocks only when every earlier step passes,
  * and only the FIRST failing check in a step is shown, to keep the signal high.
- * Verify every expected string by actually running a reference solution before
+ * Verify every expectation by actually running a reference solution before
  * shipping — a wrong expectation is worse than no check.
+ *
+ * Prefer asserting on STATE (fields, return values, identity) over formatted
+ * text. Requiring the learner to write a toString-style method just so a check
+ * can compare strings adds copy-paste that teaches nothing about the pattern,
+ * and makes every check brittle to formatting. `console.log(obj)` already
+ * renders an object readably in both this console and Node.
  */
 Dojo.register({
   meta: {
@@ -52,9 +58,10 @@ Dojo.register({
   // assert those against c.clean instead.
   captures: ['Thing'],
 
-  // Central place for expected output, so prose and checks can't drift apart.
+  // Central place for expectations, so prose and checks can't drift apart.
+  // Field sets beat formatted strings — see the note above.
   expected: {
-    plain: 'a default thing'
+    plain: { size: 'small', extras: [] }
   },
 
   scaffold: [
@@ -72,8 +79,8 @@ Dojo.register({
         '<details class="hint"><summary>Hint — one method as a template</summary>' +
         '<pre class="snippet">// give the shape, not the answer</pre></details>' +
         '<p><b>Checkpoint:</b></p>' +
-        '<pre class="snippet">console.log(new Thing().listParts());</pre>' +
-        '<div class="expected">a default thing</div>',
+        '<pre class="snippet">console.log(new Thing());</pre>' +
+        '<div class="expected">Thing { size: \'small\', extras: [] }</div>',
       checks: [
         {
           name: 'class Thing exists',
@@ -82,8 +89,14 @@ Dojo.register({
           }
         },
         {
-          name: 'listParts() reads right',
-          run: function (c) { return c.eq(new c.g.Thing().listParts(), c.expect.plain); }
+          name: 'sensible defaults',
+          run: function (c) {
+            var t = new c.g.Thing();
+            if (t.size !== c.expect.plain.size) {
+              return 'size should default to "' + c.expect.plain.size + '" but was "' + t.size + '".';
+            }
+            if (!Array.isArray(t.extras) || t.extras.length) return 'extras should default to [].';
+          }
         }
       ]
     }

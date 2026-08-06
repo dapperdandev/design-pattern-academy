@@ -110,6 +110,29 @@
     return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
   }
 
+  /**
+   * Render a logged value roughly the way Node's console.log does, so what the
+   * learner sees here matches what they get from `node file.ts`. Raw JSON would
+   * not: it drops the class name and quotes every key.
+   */
+  function inspect(v, depth) {
+    depth = depth || 0;
+    if (typeof v === 'string') return depth === 0 ? v : "'" + v + "'";
+    if (v === null || typeof v === 'undefined') return String(v);
+    if (typeof v !== 'object') return String(v);
+    if (depth > 4) return '[deep]';
+    if (Array.isArray(v)) {
+      return v.length ? '[ ' + v.map(function (x) { return inspect(x, depth + 1); }).join(', ') + ' ]' : '[]';
+    }
+    var ctor = v.constructor && v.constructor.name;
+    var name = (ctor && ctor !== 'Object') ? ctor + ' ' : '';
+    var keys = Object.keys(v);
+    if (!keys.length) return name + '{}';
+    return name + '{ ' + keys.map(function (k) {
+      return k + ': ' + inspect(v[k], depth + 1);
+    }).join(', ') + ' }';
+  }
+
   // ---------- compiler loading ----------
   function loadTypeScript(onReady, onFail) {
     if (global.ts) { onReady(global.ts); return; }
@@ -245,7 +268,7 @@
       ['log', 'info', 'warn', 'error'].forEach(function (k) {
         fakeConsole[k] = function () {
           result.logs.push(Array.prototype.map.call(arguments, function (a) {
-            return (typeof a === 'object' && a !== null) ? JSON.stringify(a) : String(a);
+            return inspect(a, 0);
           }).join(' '));
         };
       });

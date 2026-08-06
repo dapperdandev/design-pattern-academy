@@ -68,8 +68,9 @@ run it:
 node solution.ts && npx -p typescript tsc --noEmit --strict solution.ts
 ```
 
-Paste its real output into `expected`. A wrong expected string is worse than no check —
-it teaches the learner that correct code is broken. Node 24 runs `.ts` directly.
+Then write `expected` from what it actually produced. A wrong expectation is worse than
+no check — it teaches the learner that correct code is broken. Node 24 runs `.ts`
+directly.
 
 ### Authoring guidance
 
@@ -77,6 +78,12 @@ it teaches the learner that correct code is broken. Node 24 runs `.ts` directly.
   the knowledge that step needs, then make the learner produce something.
 - **Checks are feedback, not a grade.** Every failure message should say what to do
   next, not just what's wrong.
+- **Assert state, not formatted text.** Check fields, return values and identity.
+  Never make the learner write a `toString`-style method just so a check can compare
+  strings: it's copy-paste that teaches nothing about the pattern, and it makes every
+  check brittle to formatting. `console.log(obj)` already prints an object readably
+  here and in Node. Field assertions also give far better failures —
+  `cheese should be "cheddar" but was "swiss"` beats a whole-string diff.
 - **Hints, not answers.** Give the *shape* of one method in a `<details class="hint">`
   and let the learner generalise it.
 - **Gate honestly.** Steps unlock in order and only the first failing check in a step
