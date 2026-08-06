@@ -227,7 +227,17 @@
       } catch (e) { result.error = 'Compile failed: ' + e.message; return result; }
       var diags = out.diagnostics || [];
       if (diags.length) {
-        result.error = 'Syntax error: ' + global.ts.flattenDiagnosticMessageText(diags[0].messageText, ' ');
+        var d = diags[0];
+        var where = '';
+        if (typeof d.start === 'number') {
+          var upto = src.slice(0, d.start);
+          var line = upto.split('\n').length;
+          var col = d.start - upto.lastIndexOf('\n');
+          where = 'Line ' + line + ', col ' + col + ' — ';
+        }
+        result.error = 'Syntax error · ' + where +
+          global.ts.flattenDiagnosticMessageText(d.messageText, ' ');
+        result.fatal = true; // nothing compiled, so no check below can mean anything
         return result;
       }
 
@@ -248,7 +258,10 @@
       try {
         var fn = new Function('console', out.outputText + '\n;return {' + handoff + '\n};');
         result.globals = fn(fakeConsole) || {};
-      } catch (e) { result.error = 'Your code threw: ' + e.message; }
+      } catch (e) {
+        result.error = 'Your code threw: ' + e.message;
+        result.fatal = true; // it stopped before handing anything back, so checks can't run
+      }
       return result;
     }
 
@@ -277,6 +290,19 @@
       if (r.error) html += '<div class="checkline fail">⛔ <span class="msg">' + escapeHtml(r.error) + '</span></div>';
 
       for (var z = 0; z < steps.length; z++) stepPassed[z] = false; // no stale ✓ from earlier runs
+
+      // A compile error or an uncaught throw means nothing ran. Reporting each
+      // step's checks then would bury the real cause under a pile of misleading
+      // "not found yet" failures, so stop here and point at the one thing to fix.
+      if (r.fatal) {
+        checksPane.innerHTML = html +
+          '<div class="bigmsg">Your code didn\'t run, so the step checks are skipped. ' +
+          'Fix the error above and run again — the line number is in the message.</div>';
+        if (!silent) setTab(0);
+        refreshUI();
+        return;
+      }
+
       for (var s = 0; s < steps.length; s++) {
         var checks = steps[s].checks || [];
         var allOk = checks.length > 0;
