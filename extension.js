@@ -14,7 +14,6 @@
 const vscode = require('vscode');
 const path = require('node:path');
 const fs = require('node:fs');
-const os = require('node:os');
 
 const { runChecks } = require('./src/checker.js');
 const { panelHtml } = require('./src/panel.js');
@@ -40,37 +39,35 @@ function listExercises() {
 // ---------------------------------------------------------------- scaffolding
 
 /**
- * Exercises live in a home folder (default ~/design-pattern-academy), never in
- * whatever repo happens to be open. The tsconfig and globals file MUST sit next
- * to the exercise code — the TypeScript server discovers config by walking up
- * from the file, and extensions can't inject compiler options — so keeping the
- * whole nest out of the user's projects is the only clean place for it.
+ * Everything goes in the ROOT of the open workspace: one exercise file per
+ * pattern plus ONE shared tsconfig.json and ONE shared dpa-globals.d.ts for all
+ * of them. The support files must be in an ancestor directory of the code — the
+ * TypeScript server discovers config by walking up from the file, and extensions
+ * can't inject compiler options — and the root is the one ancestor every
+ * exercise shares.
+ *
+ * The price of sharing one tsconfig is one global scope: exercise files are
+ * scripts (no imports), so top-level declaration names must be unique across
+ * exercises. That's an authoring rule, enforced by using a different domain per
+ * pattern.
  */
-function academyHome() {
-  let dir = String(
-    vscode.workspace.getConfiguration('designPatternAcademy').get('home') || ''
-  ).trim();
-  if (!dir) return path.join(os.homedir(), 'design-pattern-academy');
-  if (dir === '~') return os.homedir();
-  if (dir.startsWith('~/') || dir.startsWith('~\\')) {
-    return path.join(os.homedir(), dir.slice(2));
-  }
-  return dir;
-}
-
-/** Per-exercise folder: separate tsconfig so two exercises never collide in one global scope. */
 function exerciseUris(def) {
-  const dir = vscode.Uri.file(path.join(academyHome(), def.meta.id));
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders || !folders.length) return null;
+  const root = folders[0].uri;
   return {
-    dir,
-    file: vscode.Uri.joinPath(dir, `${def.meta.id}.ts`),
-    tsconfig: vscode.Uri.joinPath(dir, 'tsconfig.json'),
-    globals: vscode.Uri.joinPath(dir, 'dpa-globals.d.ts')
+    dir: root,
+    file: vscode.Uri.joinPath(root, `${def.meta.id}.ts`),
+    tsconfig: vscode.Uri.joinPath(root, 'tsconfig.json'),
+    globals: vscode.Uri.joinPath(root, 'dpa-globals.d.ts')
   };
 }
 
+const CONFIG_MARKER = 'Design Pattern Academy';
+
 const TSCONFIG = `{
-  // Strict, and no ambient @types: what the exercise checks is what you wrote.
+  // Design Pattern Academy — strict, and no ambient @types: what the checks
+  // grade is what you wrote. Safe to delete; recreated when you open an exercise.
   "compilerOptions": {
     "target": "ES2020",
     "lib": ["ES2020"],
@@ -102,15 +99,33 @@ async function exists(uri) {
   }
 }
 
+/**
+ * Write a support file only if it's absent or was written by us (marker check).
+ * A tsconfig the user owns is never touched — their project, their rules; the
+ * checks then gate on whatever diagnostics their config produces.
+ */
+async function upsertConfig(uri, content) {
+  try {
+    const existing = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8');
+    if (!existing.includes(CONFIG_MARKER)) return;
+  } catch {
+    // absent — write it
+  }
+  await vscode.workspace.fs.writeFile(uri, new TextEncoder().encode(content));
+}
+
 async function scaffold(def, { overwrite = false } = {}) {
   const uris = exerciseUris(def);
-  await vscode.workspace.fs.createDirectory(uris.dir);
-  const enc = new TextEncoder();
-  // config files are always refreshed; the learner's code is never overwritten
-  await vscode.workspace.fs.writeFile(uris.tsconfig, enc.encode(TSCONFIG));
-  await vscode.workspace.fs.writeFile(uris.globals, enc.encode(GLOBALS));
+  if (!uris) {
+    vscode.window.showErrorMessage(
+      'Design Pattern Academy needs an open folder to put your exercise file in. Open a folder and try again.'
+    );
+    return null;
+  }
+  await upsertConfig(uris.tsconfig, TSCONFIG);
+  await upsertConfig(uris.globals, GLOBALS);
   if (overwrite || !(await exists(uris.file))) {
-    await vscode.workspace.fs.writeFile(uris.file, enc.encode(def.scaffold || ''));
+    await vscode.workspace.fs.writeFile(uris.file, new TextEncoder().encode(def.scaffold || ''));
   }
   return uris;
 }
@@ -217,6 +232,7 @@ class Session {
   async open(def) {
     this.def = def;
     this.uris = await scaffold(def);
+    if (!this.uris) return;
     const uris = this.uris;
 
     const doc = await vscode.workspace.openTextDocument(uris.file);

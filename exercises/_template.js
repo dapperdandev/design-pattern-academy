@@ -36,6 +36,10 @@
  *
  * Node runs the exercise file with type stripping, so `enum` and constructor
  * parameter properties fail at runtime. Warn the learner in the prose.
+ *
+ * All exercise files share one tsconfig and therefore ONE GLOBAL SCOPE: every
+ * top-level declaration name must be unique across exercises. A different
+ * domain per pattern makes this automatic.
  */
 'use strict';
 

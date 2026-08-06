@@ -45,21 +45,23 @@ Checks re-run on every save (`designPatternAcademy.runChecksOnSave`).
 
 ### Where your files go
 
-Exercise files are created under `~/design-pattern-academy/<id>/` — **nothing is written
-into whatever repo you have open**. Each exercise folder holds three files:
+Everything goes in the **root of the folder you have open** — best used with a dedicated
+folder (e.g. `K:\per\design-patterns`):
 
-- `<id>.ts` — your code
-- `tsconfig.json` — strict, ES2020 lib, no ambient types
-- `dpa-globals.d.ts` — declares `console` (the ES2020 lib doesn't have it)
+- `<id>.ts` — one file per pattern, e.g. `builder.ts`
+- `tsconfig.json` — **one shared config for all patterns**: strict, ES2020 lib, no ambient types
+- `dpa-globals.d.ts` — **one shared file**: declares `console` (the ES2020 lib doesn't have it)
 
-The two support files must sit beside your code: the TypeScript server discovers
-configuration by walking up the directory tree from the file, and extensions can't inject
-compiler options any other way. Keeping the whole nest in a home folder is what keeps it
-out of your projects.
+The two support files exist because the TypeScript server discovers configuration by
+walking up the directory tree from the file — extensions can't inject compiler options.
+Putting them once at the root is what avoids a copy per pattern.
 
-Move it with the `designPatternAcademy.home` setting (absolute path; `~` expands).
-`git init ~/design-pattern-academy` if you want your solutions in version control. Step
-and quiz progress live in extension state, not in the files.
+They're written only if missing or previously written by this extension (marker comment).
+A `tsconfig.json` you own is never touched — the checks then gate on whatever diagnostics
+your config produces.
+
+Step and quiz progress live in extension state, not in the files, so the folder stays
+clean enough to `git init` if you want your solutions in version control.
 
 ## Layout
 
@@ -111,6 +113,10 @@ check — it teaches the learner that correct code is broken. Node 24 runs `.ts`
   beats a whole-string diff.
 - **Don't check types.** VS Code does that, and the extension already blocks on it. Your
   checks are about behaviour.
+- **Top-level names must be unique across all exercises.** Every exercise file shares one
+  tsconfig and therefore one global scope — two exercises both declaring `Product` is a
+  duplicate-identifier error in the learner's editor. Using a different domain per pattern
+  (sandwiches, coffee, houses…) makes this automatic.
 - **Don't let a check pass by luck.** If the prose asks for something, exercise the case
   that needs it — the director's `reset()` only proves itself against a builder left
   mid-order.

@@ -41,7 +41,12 @@ const fakeVscode = {
   workspace: {
     workspaceFolders: [{ uri: Uri.file(path.join(ROOT, 'sandbox')) }],
     getConfiguration: () => ({ get: (_key, dflt) => dflt }),
-    fs: { createDirectory: async () => {}, writeFile: async () => {}, stat: async () => ({}) },
+    fs: {
+      createDirectory: async () => {},
+      writeFile: async () => {},
+      stat: async () => ({}),
+      readFile: async () => { throw new Error('ENOENT'); } // no file yet, by default
+    },
     openTextDocument: async () => ({ getText: () => '' }),
     onDidSaveTextDocument: () => ({ dispose() {} })
   },
@@ -157,15 +162,30 @@ test('panel renders with a CSP nonce and no un-nonced script', () => {
 section('== scaffolding ==');
 const def = require(path.join(ROOT, 'exercises/builder.js'));
 
-test('exercise files live in the home folder, never the open repo', async () => {
-  const os = require('node:os');
+test('everything scaffolds into the workspace root, one shared config for all patterns', async () => {
+  const root = fakeVscode.workspace.workspaceFolders[0].uri.fsPath;
   const uris = await extension.scaffold(def);
-  const home = path.join(os.homedir(), 'design-pattern-academy');
-  assert.ok(uris.file.fsPath.startsWith(home),
-    uris.file.fsPath + ' should be under ' + home);
-  assert.ok(uris.file.fsPath.endsWith(path.join('builder', 'builder.ts')));
-  assert.equal(path.dirname(uris.tsconfig.fsPath), path.dirname(uris.file.fsPath),
-    'tsconfig must sit beside the code — that is how the TS server finds it');
+  assert.equal(uris.file.fsPath, path.join(root, 'builder.ts'));
+  assert.equal(uris.tsconfig.fsPath, path.join(root, 'tsconfig.json'),
+    'ONE tsconfig at the root covers every exercise');
+  assert.equal(uris.globals.fsPath, path.join(root, 'dpa-globals.d.ts'));
+});
+
+test('a tsconfig the user owns is never overwritten', async () => {
+  const written = [];
+  const origWrite = fakeVscode.workspace.fs.writeFile;
+  const origRead = fakeVscode.workspace.fs.readFile;
+  fakeVscode.workspace.fs.writeFile = async (uri) => { written.push(path.basename(uri.fsPath)); };
+  fakeVscode.workspace.fs.readFile = async () =>
+    Buffer.from('{ "compilerOptions": { "strict": false } }'); // theirs — no marker
+  try {
+    await extension.scaffold(def);
+    assert.ok(!written.includes('tsconfig.json'), 'must not clobber a user-owned tsconfig');
+    assert.ok(!written.includes('dpa-globals.d.ts'), 'same rule for the globals file');
+  } finally {
+    fakeVscode.workspace.fs.writeFile = origWrite;
+    fakeVscode.workspace.fs.readFile = origRead;
+  }
 });
 
 // ---------------------------------------------------------------- grading
