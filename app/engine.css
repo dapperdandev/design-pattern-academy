@@ -6,10 +6,38 @@
   --accent: #6b4f2a; --accent-2: #a07d4c;
   --ok: #1a7f37; --ok-bg: #e6f4ea; --bad: #b42318; --bad-bg: #fdecea;
   --lock: #9a9a9a; --border: #e3e0da;
-  --ed-bg: #1e1e28; --ed-ink: #e8e6e1; --ed-gutter: #8a8896;
   --mono: ui-monospace, "Cascadia Code", Consolas, Menlo, monospace;
   --serif: Georgia, "Times New Roman", serif;
   --sans: -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- work-pane theme ----------
+   The editor, gutter and results panel are themed as one unit so a light
+   editor never ends up with light-on-light text. Every colour below is a
+   variable: nothing in the work pane may hardcode a colour, or the two
+   themes drift and one of them becomes unreadable.
+   Dark is the default; JS sets data-ed-theme on <html>. */
+:root, :root[data-ed-theme="dark"] {
+  --ed-bg: #1e1e28; --ed-ink: #e8e6e1;
+  --ed-gutter-fg: #8a8896; --ed-gutter-bg: #191922; --ed-border: #2a2a36;
+  --ed-caret: #ffd479; --ed-sel: rgba(94, 124, 255, 0.35);
+  --tk-c: #9aa4b2; --tk-k: #c792ea; --tk-s: #9ece6a; --tk-n: #ff9e64; --tk-t: #f0c674;
+  --res-bg: #0f0f16; --res-toolbar: #14141c; --res-toolbar-fg: #b9b7c9;
+  --res-tab-fg: #8a8896; --res-tab-active-bg: #1b1b26; --res-tab-active-fg: #ffffff;
+  --res-ok: #7ee787; --res-fail-fg: #ff9c9c; --res-fail-bg: #1d1216;
+  --res-msg: #c8c6d4; --res-fail-msg: #ffb8b0; --res-console: #d5e3ff; --res-hdr: #8a8896;
+}
+/* Light palette — token hues from GitHub's light theme, all comfortably above
+   4.5:1 on the editor background. */
+:root[data-ed-theme="light"] {
+  --ed-bg: #fdfdfb; --ed-ink: #1f2328;
+  --ed-gutter-fg: #5f6873; --ed-gutter-bg: #f2f1ec; --ed-border: #d8d4cc;
+  --ed-caret: #0550ae; --ed-sel: rgba(84, 174, 255, 0.35);
+  --tk-c: #59636e; --tk-k: #cf222e; --tk-s: #0a3069; --tk-n: #0550ae; --tk-t: #953800;
+  --res-bg: #ffffff; --res-toolbar: #f2f1ec; --res-toolbar-fg: #57606a;
+  --res-tab-fg: #57606a; --res-tab-active-bg: #eaeef2; --res-tab-active-fg: #1f2328;
+  --res-ok: #116329; --res-fail-fg: #82071e; --res-fail-bg: #ffebe9;
+  --res-msg: #57606a; --res-fail-msg: #82071e; --res-console: #1f2328; --res-hdr: #6e7781;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; }
@@ -118,15 +146,16 @@ section.work { display: flex; flex-direction: column; min-width: 0; height: 100%
 @media (max-width: 950px) { section.work { height: 90vh; } }
 .toolbar {
   display: flex; gap: 8px; align-items: center; padding: 8px 12px;
-  background: #14141c; border-bottom: 1px solid #2a2a36;
+  background: var(--res-toolbar); border-bottom: 1px solid var(--ed-border);
 }
-.toolbar .fname { font-family: var(--mono); font-size: 12px; color: #b9b7c9; }
-.toolbar .watch { font-size: 12px; color: #b9b7c9; }
+.toolbar .fname { font-family: var(--mono); font-size: 12px; color: var(--res-toolbar-fg); }
+.toolbar .watch { font-size: 12px; color: var(--res-toolbar-fg); }
 .editorwrap { position: relative; flex: 1 1 55%; display: flex; min-height: 200px; background: var(--ed-bg); }
 #gutter {
-  font-family: var(--mono); font-size: 13px; line-height: 1.55; color: var(--ed-gutter);
+  font-family: var(--mono); font-size: 13px; line-height: 1.55; color: var(--ed-gutter-fg);
   text-align: right; user-select: none; overflow: hidden;
-  white-space: pre; background: #191922; border-right: 1px solid #2a2a36; min-width: 44px;
+  white-space: pre; background: var(--ed-gutter-bg);
+  border-right: 1px solid var(--ed-border); min-width: 44px;
 }
 #gutterInner { padding: 12px 8px 12px 14px; will-change: transform; }
 .edstack { position: relative; flex: 1; min-width: 0; }
@@ -144,34 +173,37 @@ section.work { display: flex; flex-direction: column; min-width: 0; height: 100%
 #hlContent {
   display: block; padding: 12px 14px; font: inherit; line-height: inherit;
   white-space: pre; tab-size: 2; min-width: max-content; will-change: transform;
+  /* #hlContent is a <code> element, so the global `code` rule would paint its
+     light background over the editor and leave the text unreadable. */
+  background: none; border-radius: 0; color: inherit;
 }
 #editor {
-  background: transparent; color: transparent; caret-color: #ffd479;
+  background: transparent; color: transparent; caret-color: var(--ed-caret);
   outline: none; resize: none; z-index: 2;
 }
-#editor::selection { background: rgba(94, 124, 255, 0.35); }
+#editor::selection { background: var(--ed-sel); }
 .edstack.readonly #highlight { opacity: 0.75; }
 /* token colors only — no bold/italic, so the overlay's metrics match the textarea exactly */
-.tk-c { color: #7c8591; }
-.tk-k { color: #c792ea; }
-.tk-s { color: #98c379; }
-.tk-n { color: #f78c6c; }
-.tk-t { color: #e5c07b; }
+.tk-c { color: var(--tk-c); }
+.tk-k { color: var(--tk-k); }
+.tk-s { color: var(--tk-s); }
+.tk-n { color: var(--tk-n); }
+.tk-t { color: var(--tk-t); }
 
-.results { flex: 1 1 45%; min-height: 160px; display: flex; flex-direction: column; background: #0f0f16; border-top: 2px solid #2a2a36; }
+.results { flex: 1 1 45%; min-height: 160px; display: flex; flex-direction: column; background: var(--res-bg); border-top: 2px solid var(--ed-border); }
 .results .tabs { display: flex; gap: 2px; padding: 6px 10px 0; }
-.results .tabs button { background: transparent; border: 0; color: #8a8896; font-size: 12.5px; padding: 6px 10px; border-radius: 6px 6px 0 0; }
-.results .tabs button.active { color: #fff; background: #1b1b26; }
+.results .tabs button { background: transparent; border: 0; color: var(--res-tab-fg); font-size: 12.5px; padding: 6px 10px; border-radius: 6px 6px 0 0; }
+.results .tabs button.active { color: var(--res-tab-active-fg); background: var(--res-tab-active-bg); }
 .results .pane { flex: 1; overflow: auto; padding: 10px 14px 20px; display: none; }
 .results .pane.active { display: block; }
 .checkline { font-family: var(--sans); font-size: 13px; padding: 5px 8px; border-radius: 6px; margin: 3px 0; display: flex; gap: 8px; }
-.checkline.ok { color: #7ee787; }
-.checkline.fail { color: #ff9c9c; background: #1d1216; }
-.checkline .msg { color: #c8c6d4; }
-.checkline.fail .msg { color: #ffb8b0; }
-#consolePane pre { font-family: var(--mono); font-size: 12.5px; color: #d5e3ff; margin: 0; white-space: pre-wrap; }
-.stephdr { font-family: var(--sans); font-size: 12px; font-weight: 700; color: #8a8896; text-transform: uppercase; letter-spacing: .06em; margin: 10px 0 4px; }
-.bigmsg { color: #8a8896; font-family: var(--sans); font-size: 13px; padding: 8px; }
+.checkline.ok { color: var(--res-ok); }
+.checkline.fail { color: var(--res-fail-fg); background: var(--res-fail-bg); }
+.checkline .msg { color: var(--res-msg); }
+.checkline.fail .msg { color: var(--res-fail-msg); }
+#consolePane pre { font-family: var(--mono); font-size: 12.5px; color: var(--res-console); margin: 0; white-space: pre-wrap; }
+.stephdr { font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--res-hdr); text-transform: uppercase; letter-spacing: .06em; margin: 10px 0 4px; }
+.bigmsg { color: var(--res-hdr); font-family: var(--sans); font-size: 13px; padding: 8px; }
 
 /* ---------- catalog (index.html) ---------- */
 .catalog { max-width: 60rem; margin: 0 auto; padding: 28px 22px 70px; }

@@ -25,8 +25,37 @@
     readProgress: readProgress,
     escapeHtml: escapeHtml,
     highlightTS: highlightTS,
-    loadTypeScript: loadTypeScript
+    loadTypeScript: loadTypeScript,
+    currentTheme: currentTheme,
+    applyTheme: applyTheme
   };
+
+  // ---------- editor theme ----------
+  // The work pane is themed as a unit (see engine.css). Default follows the OS
+  // preference, because a light-background environment with the dark palette
+  // leaves untokenized code nearly invisible. Explicit choice always wins.
+  var THEME_KEY = 'dojo:editor-theme';
+  function currentTheme() {
+    var saved;
+    try { saved = localStorage.getItem(THEME_KEY); } catch (e) {}
+    if (saved === 'light' || saved === 'dark') return saved;
+    var mq = global.matchMedia && global.matchMedia('(prefers-color-scheme: light)');
+    return (mq && mq.matches) ? 'light' : 'dark';
+  }
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-ed-theme', theme);
+    var btn = document.getElementById('themeBtn');
+    if (btn) {
+      btn.textContent = theme === 'light' ? '☀ Light' : '☾ Dark';
+      btn.title = 'Editor theme: ' + theme + ' — click to switch';
+    }
+    return theme;
+  }
+  function toggleTheme() {
+    var next = currentTheme() === 'light' ? 'dark' : 'light';
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    return applyTheme(next);
+  }
 
   // ---------- storage ----------
   function keyFor(id, what) { return 'dojo:' + id + ':' + what; }
@@ -116,7 +145,9 @@
       (meta.domain ? ' — ' + meta.domain : '') + ' · Pattern Dojo';
 
     // ---- build the page ----
+    applyTheme(currentTheme()); // before render, so there's no flash of the wrong palette
     root.innerHTML = renderShell(meta, steps, quiz, rootPath);
+    applyTheme(currentTheme()); // again, to label the button the shell just created
 
     var editor = document.getElementById('editor');
     var gutterInner = document.getElementById('gutterInner');
@@ -372,6 +403,7 @@
     }
 
     // ---- buttons ----
+    document.getElementById('themeBtn').addEventListener('click', function () { toggleTheme(); });
     runBtn.addEventListener('click', function () { runChecks(); });
     resetBtn.addEventListener('click', function () {
       if (!confirm('Reset the editor to the empty scaffold? Your quiz progress is kept.')) return;
@@ -434,6 +466,7 @@
         '<span class="pill" id="progressPill">Step 1</span>' +
         '<span id="tsStatus">loading TypeScript compiler…</span>' +
         '<div class="spacer"></div>' +
+        '<button id="themeBtn" title="Toggle editor theme">☾ Dark</button>' +
         '<button id="watchBtn" title="Edit the file in your own editor; checks re-run on save">👁 Watch a file</button>' +
         '<button id="resetBtn">Reset code</button>' +
         '<button class="primary" id="runBtn" title="Ctrl+Enter">▶ Run checks</button>' +
