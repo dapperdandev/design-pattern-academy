@@ -11,6 +11,17 @@
 
   var FIELDS = ['bread', 'decks', 'cheese', 'toasted'];
 
+  /**
+   * A builder left part-way through an order — configured, never built. Handing
+   * this to the director is what proves each recipe starts with reset(); with a
+   * fresh builder the missing reset() hides, because build() resets afterwards.
+   */
+  function dirtyBuilder(c) {
+    var b = new c.g.DeliSandwichBuilder();
+    b.setBread('rye').addDeck().addTopping('pastrami');
+    return b;
+  }
+
   /** Compare a built sandwich against an expected field set. Returns a message, or null when it matches. */
   function wrong(got, want) {
     if (!got || typeof got !== 'object') return 'build() did not return a Sandwich.';
@@ -135,7 +146,9 @@
           '<pre class="snippet">console.log(new Sandwich());</pre>' +
           '<div class="expected">Sandwich { bread: \'white\', decks: 1, cheese: null, toppings: [], toasted: false }</div>' +
           '<p class="why">Logging the object is all you need to see your work — no formatting method ' +
-          'required. <code>node</code> prints the same fields, wrapped across several lines.</p>',
+          'required. <code>node</code> prints the same fields, wrapped across several lines. Fields ' +
+          'appear in the order you declared them, so your line may not match the one above exactly — ' +
+          'the checks compare values, never layout.</p>',
         checks: [
           {
             name: 'class Sandwich exists',
@@ -329,19 +342,25 @@
             }
           },
           {
-            name: 'makeGrilledCheese() recipe',
+            name: 'makeGrilledCheese() recipe (even on a builder mid-order)',
             run: function (c) {
-              var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder()).makeGrilledCheese();
+              var got = new c.g.SandwichArtist(dirtyBuilder(c)).makeGrilledCheese();
               var msg = wrong(got, c.expect.grilledCheese);
-              if (msg) return msg + ' (Recipe: reset, white bread, cheddar, toasted.)';
+              if (msg) {
+                return msg + ' (Recipe: reset, white bread, cheddar, toasted. Start the recipe with ' +
+                  'reset() — a director can\'t assume the builder is clean.)';
+              }
             }
           },
           {
-            name: 'makeClubSandwich() recipe',
+            name: 'makeClubSandwich() recipe (even on a builder mid-order)',
             run: function (c) {
-              var got = new c.g.SandwichArtist(new c.g.DeliSandwichBuilder()).makeClubSandwich();
+              var got = new c.g.SandwichArtist(dirtyBuilder(c)).makeClubSandwich();
               var msg = wrong(got, c.expect.club);
-              if (msg) return msg + ' (Recipe: reset, wheat, one extra deck, swiss, turkey, bacon, toasted.)';
+              if (msg) {
+                return msg + ' (Recipe: reset, wheat, one extra deck, swiss, turkey, bacon, toasted. ' +
+                  'Start the recipe with reset() — a director can\'t assume the builder is clean.)';
+              }
             }
           }
         ]
