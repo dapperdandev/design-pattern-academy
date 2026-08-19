@@ -36,14 +36,14 @@ steps directly (custom order).
 ## Techniques and smells
 
 **Fluent API / method chaining**
-: Methods that return the receiver so calls chain: `b.setBread('rye').addDeck().build()`. In
+: Methods that return the receiver so calls chain: `b.setBread('rye').addTopping('pastrami').build()`. In
 TypeScript, type the return as
 [polymorphic `this`](https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types)
 so subclasses chain correctly.
 
 **Telescoping constructor**
 : A constructor (or overload pile) with many mostly-optional positional parameters:
-`new Sandwich('rye', 2, 'swiss', [], true)`. The classic motivation for Builder.
+`new Sandwich('rye', 'swiss', [], true)`. The classic motivation for Builder.
 
 **Sentinel value**
 : A real value standing in for absence — a `'none'` member of a union, `-1` for "not found".

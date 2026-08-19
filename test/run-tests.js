@@ -198,7 +198,6 @@ type Cheese = 'cheddar' | 'swiss';
 
 class Sandwich {
   bread: Bread = 'white';
-  decks = 1;
   cheese: Cheese | null = null;
   toppings: string[] = [];
   toasted = false;
@@ -207,7 +206,6 @@ class Sandwich {
 interface SandwichBuilder {
   reset(): this;
   setBread(bread: Bread): this;
-  addDeck(): this;
   setCheese(cheese: Cheese): this;
   addTopping(topping: string): this;
   toast(): this;
@@ -218,7 +216,6 @@ class DeliSandwichBuilder implements SandwichBuilder {
   private sandwich = new Sandwich();
   reset(): this { this.sandwich = new Sandwich(); return this; }
   setBread(bread: Bread): this { this.sandwich.bread = bread; return this; }
-  addDeck(): this { this.sandwich.decks += 1; return this; }
   setCheese(cheese: Cheese): this { this.sandwich.cheese = cheese; return this; }
   addTopping(topping: string): this { this.sandwich.toppings.push(topping); return this; }
   toast(): this { this.sandwich.toasted = true; return this; }
@@ -232,14 +229,14 @@ class SandwichArtist {
     return this.builder.reset().setBread('white').setCheese('cheddar').toast().build();
   }
   makeClubSandwich(): Sandwich {
-    return this.builder.reset().setBread('wheat').addDeck().setCheese('swiss')
+    return this.builder.reset().setBread('wheat').setCheese('swiss')
       .addTopping('turkey').addTopping('bacon').toast().build();
   }
 }
 
 console.log(new Sandwich());
 const builder = new DeliSandwichBuilder();
-console.log(builder.setBread('rye').addDeck().addTopping('pastrami').build());
+console.log(builder.setBread('rye').addTopping('pastrami').build());
 const artist = new SandwichArtist(builder);
 console.log(artist.makeGrilledCheese());
 console.log(artist.makeClubSandwich());
@@ -263,23 +260,26 @@ test('the reference solution passes every step and every check', () => {
 test('logged output matches what `node` prints', () => {
   const r = runChecks(def, SOLUTION);
   assert.deepEqual(r.logs, [
-    "Sandwich { bread: 'white', decks: 1, cheese: null, toppings: [], toasted: false }",
-    "Sandwich { bread: 'rye', decks: 2, cheese: null, toppings: [ 'pastrami' ], toasted: false }",
-    "Sandwich { bread: 'white', decks: 1, cheese: 'cheddar', toppings: [], toasted: true }",
-    "Sandwich { bread: 'wheat', decks: 2, cheese: 'swiss', toppings: [ 'turkey', 'bacon' ], toasted: true }"
+    "Sandwich { bread: 'white', cheese: null, toppings: [], toasted: false }",
+    "Sandwich { bread: 'rye', cheese: null, toppings: [ 'pastrami' ], toasted: false }",
+    "Sandwich { bread: 'white', cheese: 'cheddar', toppings: [], toasted: true }",
+    "Sandwich { bread: 'wheat', cheese: 'swiss', toppings: [ 'turkey', 'bacon' ], toasted: true }"
   ]);
 });
 
 test('a director that skips reset() is caught', () => {
   const r = runChecks(def, SOLUTION.replace(/\.reset\(\)\.setBread/g, '.setBread'));
   assert.equal(r.steps[3].passed, false);
-  assert.match(r.steps[3].checks.at(-1).message, /decks should be 1 but was 2/);
+  const failed = r.steps[3].checks.find((c) => !c.pass);
+  assert.ok(failed, 'a director check should have failed');
+  assert.match(failed.message, /toppings should be \(none\) but were pastrami/,
+    'the mid-order pastrami leaks into the recipe when reset() is missing');
 });
 
 test('field declaration order is not required', () => {
   const reordered = SOLUTION.replace(
-    "  bread: Bread = 'white';\n  decks = 1;\n  cheese: Cheese | null = null;",
-    "  bread: Bread = 'white';\n  cheese: Cheese | null = null;\n  decks = 1;"
+    "  bread: Bread = 'white';\n  cheese: Cheese | null = null;",
+    "  cheese: Cheese | null = null;\n  bread: Bread = 'white';"
   );
   assert.equal(runChecks(def, reordered).steps.filter((s) => s.passed).length, def.steps.length);
 });

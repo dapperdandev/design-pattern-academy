@@ -10,7 +10,7 @@
  */
 'use strict';
 
-var FIELDS = ['bread', 'decks', 'cheese', 'toasted'];
+var FIELDS = ['bread', 'cheese', 'toasted'];
 
 /**
  * A builder left part-way through an order — configured, never built. Handing
@@ -19,7 +19,7 @@ var FIELDS = ['bread', 'decks', 'cheese', 'toasted'];
  */
 function dirtyBuilder(c) {
   var b = new c.g.DeliSandwichBuilder();
-  b.setBread('rye').addDeck().addTopping('pastrami');
+  b.setBread('rye').addTopping('pastrami');
   return b;
 }
 
@@ -86,10 +86,10 @@ module.exports = {
     // What each order should contain. Fields, not formatted text — so the checks
     // test the pattern's behaviour and nothing depends on how it's printed.
     expected: {
-      plain:         { bread: 'white', decks: 1, cheese: null,      toppings: [],                  toasted: false },
-      custom:        { bread: 'rye',   decks: 2, cheese: null,      toppings: ['pastrami'],        toasted: false },
-      grilledCheese: { bread: 'white', decks: 1, cheese: 'cheddar', toppings: [],                  toasted: true },
-      club:          { bread: 'wheat', decks: 2, cheese: 'swiss',   toppings: ['turkey', 'bacon'], toasted: true }
+      plain:         { bread: 'white', cheese: null,      toppings: [],                  toasted: false },
+      custom:        { bread: 'rye',   cheese: null,      toppings: ['pastrami'],        toasted: false },
+      grilledCheese: { bread: 'white', cheese: 'cheddar', toppings: [],                  toasted: true },
+      club:          { bread: 'wheat', cheese: 'swiss',   toppings: ['turkey', 'bacon'], toasted: true }
     },
 
     scaffold: [
@@ -123,16 +123,16 @@ module.exports = {
           'It knows <i>nothing</i> about builders, and it needs no methods at all: it is just the ' +
           'fields that describe an order.</p>' +
           '<p>Why does this pattern exist? Imagine the alternative — one constructor trying to cover ' +
-          'every order: <code>new Sandwich(\'rye\', 2, \'swiss\', [\'pastrami\'], true)</code>. ' +
-          'Five positional arguments, most optional, impossible to read. That\'s the ' +
+          'every order: <code>new Sandwich(\'rye\', \'swiss\', [\'pastrami\'], true)</code>. ' +
+          'Four positional arguments, most optional, impossible to read. That\'s the ' +
           '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">' +
           '"telescoping constructor"</a> problem Builder solves.</p>' +
           '<p><b>Write:</b></p><ul>' +
           '<li>Type aliases: <code>Bread = \'white\' | \'wheat\' | \'rye\'</code> and ' +
             '<code>Cheese = \'cheddar\' | \'swiss\'</code></li>' +
-          '<li><code>class Sandwich</code> with five fields, each with a default: ' +
-            '<code>bread: Bread = \'white\'</code>, <code>decks = 1</code> (a club sandwich is a ' +
-            'double-decker), <code>cheese: Cheese | null = null</code>, ' +
+          '<li><code>class Sandwich</code> with four fields, each with a default: ' +
+            '<code>bread: Bread = \'white\'</code>, ' +
+            '<code>cheese: Cheese | null = null</code>, ' +
             '<code>toppings: string[] = []</code>, <code>toasted = false</code></li></ul>' +
           '<p class="why">Note what the <code>Cheese</code> type does <i>not</i> contain: a member ' +
           'meaning "no cheese". Absence isn\'t a kind of cheese, so it\'s <code>null</code> rather ' +
@@ -146,7 +146,7 @@ module.exports = {
           'under <code>tsc --strict</code>.</p>' +
           '<p><b>Checkpoint</b> — add this line and hit <i>Run checks</i>:</p>' +
           '<pre class="snippet">console.log(new Sandwich());</pre>' +
-          '<div class="expected">Sandwich { bread: \'white\', decks: 1, cheese: null, toppings: [], toasted: false }</div>' +
+          '<div class="expected">Sandwich { bread: \'white\', cheese: null, toppings: [], toasted: false }</div>' +
           '<p class="why">Logging the object is all you need to see your work — no formatting method ' +
           'required. <code>node</code> prints the same fields, wrapped across several lines. Fields ' +
           'appear in the order you declared them, so your line may not match the one above exactly — ' +
@@ -159,7 +159,7 @@ module.exports = {
             }
           },
           {
-            name: 'five fields, with sensible defaults',
+            name: 'four fields, with sensible defaults',
             run: function (c) {
               var s = new c.g.Sandwich();
               if (!Array.isArray(s.toppings)) return 'toppings should default to an empty array [].';
@@ -178,7 +178,6 @@ module.exports = {
           '<pre class="snippet">interface SandwichBuilder {\n' +
           '  reset(): this;\n' +
           '  setBread(bread: Bread): this;\n' +
-          '  addDeck(): this;\n' +
           '  setCheese(cheese: Cheese): this;\n' +
           '  addTopping(topping: string): this;\n' +
           '  toast(): this;\n' +
@@ -204,11 +203,11 @@ module.exports = {
             }
           },
           {
-            name: 'declares all seven steps',
+            name: 'declares all six steps',
             run: function (c) {
               var m = c.clean.match(/interface\s+SandwichBuilder\s*\{([\s\S]*?)\n\}/);
               if (!m) return 'Could not read the interface body.';
-              var missing = ['reset', 'setBread', 'addDeck', 'setCheese', 'addTopping', 'toast', 'build']
+              var missing = ['reset', 'setBread', 'setCheese', 'addTopping', 'toast', 'build']
                 .filter(function (n) { return !(new RegExp(n + '\\s*\\(')).test(m[1]); });
               if (missing.length) return 'Missing method(s): ' + missing.join(', ');
             }
@@ -220,8 +219,8 @@ module.exports = {
               if (!m) return 'Could not read the interface body.';
               var thisCount = (m[1].match(/\)\s*:\s*this\b/g) || []).length;
               var buildOk = /build\s*\(\s*\)\s*:\s*Sandwich\b/.test(m[1]);
-              if (thisCount < 6 || !buildOk) {
-                return 'Six steps should return `this` (found ' + thisCount + '); ' +
+              if (thisCount < 5 || !buildOk) {
+                return 'Five steps should return `this` (found ' + thisCount + '); ' +
                   'build() should return Sandwich.';
               }
             }
@@ -245,8 +244,8 @@ module.exports = {
           '  this.sandwich.bread = bread;\n' +
           '  return this;\n' +
           '}</pre>' +
-          '<p class="why">The other steps follow the same shape. <code>addDeck()</code> does ' +
-          '<code>this.sandwich.decks += 1</code>.</p></details>' +
+          '<p class="why">The other steps follow the same shape — <code>addTopping()</code> pushes ' +
+          'onto the array instead of assigning.</p></details>' +
           '<details class="hint"><summary>Hint 2 — the build/reset dance</summary>' +
           '<pre class="snippet">build(): Sandwich {\n' +
           '  const order = this.sandwich;\n' +
@@ -255,9 +254,9 @@ module.exports = {
           '}</pre></details>' +
           '<p><b>Checkpoint</b> — a customer with opinions:</p>' +
           '<pre class="snippet">const builder = new DeliSandwichBuilder();\n' +
-          'const custom = builder.setBread(\'rye\').addDeck().addTopping(\'pastrami\').build();\n' +
+          'const custom = builder.setBread(\'rye\').addTopping(\'pastrami\').build();\n' +
           'console.log(custom);</pre>' +
-          '<div class="expected">Sandwich { bread: \'rye\', decks: 2, cheese: null, toppings: [ \'pastrami\' ], toasted: false }</div>',
+          '<div class="expected">Sandwich { bread: \'rye\', cheese: null, toppings: [ \'pastrami\' ], toasted: false }</div>',
         checks: [
           {
             name: 'DeliSandwichBuilder implements SandwichBuilder',
@@ -272,7 +271,7 @@ module.exports = {
             name: 'steps are fluent (each returns the builder itself)',
             run: function (c) {
               var b = new c.g.DeliSandwichBuilder();
-              if (!(b.setBread('white') === b && b.addDeck() === b && b.toast() === b)) {
+              if (!(b.setBread('white') === b && b.addTopping('olives') === b && b.toast() === b)) {
                 return 'Each step must `return this;` — the very same builder instance.';
               }
             }
@@ -281,7 +280,7 @@ module.exports = {
             name: 'the pastrami-on-rye order comes out right',
             run: function (c) {
               var got = new c.g.DeliSandwichBuilder()
-                .setBread('rye').addDeck().addTopping('pastrami').build();
+                .setBread('rye').addTopping('pastrami').build();
               return wrong(got, c.expect.custom);
             }
           },
@@ -311,7 +310,7 @@ module.exports = {
           '<code>SandwichBuilder</code> in its constructor and offers two menu items (each recipe ' +
           'should <code>reset()</code> first):</p><ul>' +
           '<li><code>makeGrilledCheese(): Sandwich</code> — white bread, cheddar, toasted</li>' +
-          '<li><code>makeClubSandwich(): Sandwich</code> — wheat, one extra deck, swiss, turkey ' +
+          '<li><code>makeClubSandwich(): Sandwich</code> — wheat, swiss, turkey ' +
             'topping, bacon topping, toasted</li></ul>' +
           '<p class="why">⚠ Node trap: <code>constructor(private builder: SandwichBuilder)</code> is ' +
           'a "parameter property" — it won\'t survive Node\'s type stripping. Declare the field, then ' +
@@ -325,8 +324,8 @@ module.exports = {
           '<pre class="snippet">const artist = new SandwichArtist(builder);\n' +
           'console.log(artist.makeGrilledCheese());\n' +
           'console.log(artist.makeClubSandwich());</pre>' +
-          '<div class="expected">Sandwich { bread: \'white\', decks: 1, cheese: \'cheddar\', toppings: [], toasted: true }\n' +
-          'Sandwich { bread: \'wheat\', decks: 2, cheese: \'swiss\', toppings: [ \'turkey\', \'bacon\' ], toasted: true }</div>',
+          '<div class="expected">Sandwich { bread: \'white\', cheese: \'cheddar\', toppings: [], toasted: true }\n' +
+          'Sandwich { bread: \'wheat\', cheese: \'swiss\', toppings: [ \'turkey\', \'bacon\' ], toasted: true }</div>',
         checks: [
           {
             name: 'class SandwichArtist exists',
@@ -360,7 +359,7 @@ module.exports = {
               var got = new c.g.SandwichArtist(dirtyBuilder(c)).makeClubSandwich();
               var msg = wrong(got, c.expect.club);
               if (msg) {
-                return msg + ' (Recipe: reset, wheat, one extra deck, swiss, turkey, bacon, toasted. ' +
+                return msg + ' (Recipe: reset, wheat, swiss, turkey, bacon, toasted. ' +
                   'Start the recipe with reset() — a director can\'t assume the builder is clean.)';
               }
             }
