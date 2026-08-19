@@ -2,7 +2,7 @@
   "name": "design-pattern-academy",
   "displayName": "Design Pattern Academy",
   "description": "Learn design patterns by implementing them in your own editor, with gated steps and automated checks.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "publisher": "local",
   "license": "UNLICENSED",

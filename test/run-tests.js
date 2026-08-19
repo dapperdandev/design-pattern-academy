@@ -141,7 +141,7 @@ test('sidebar tree lists exercises with progress and reference sheets', () => {
   const builder = roots.find((r) => String(r.label).includes('The Builder Pattern'));
   assert.ok(builder, 'builder exercise appears in the tree');
   assert.deepEqual(builder.command.arguments, ['builder'], 'clicking opens that exercise directly');
-  assert.match(String(builder.description), /^0\/6$/, 'fresh state shows 0/6');
+  assert.match(String(builder.description), /^0\/5$/, 'four build steps plus the quiz');
   const refRoot = roots.find((r) => r.contextValue === 'dpa.referenceRoot');
   assert.ok(refRoot, 'reference sheets node exists');
   const refs = provider.getChildren(refRoot);

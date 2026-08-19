@@ -66,7 +66,22 @@ module.exports = {
         { name: 'builder-pattern.md', label: 'Builder cheat sheet' },
         { name: 'design-patterns-glossary.md', label: 'Design-patterns glossary' }
       ],
-      finale: '🎉 <b>All checks green.</b> To make it stick:' +
+      finale: '🎉 <b>All four roles built.</b>' +
+        '<p><b>Try it out.</b> Nothing above made you actually <i>use</i> what you built. There are ' +
+        'two ways to order, and the difference between them is the point of the pattern:</p>' +
+        '<pre class="snippet">// 1. the client drives the builder — a one-off order\n' +
+        'const builder = new DeliSandwichBuilder();\n' +
+        'console.log(builder.setBread(\'rye\').addTopping(\'pastrami\').build());\n\n' +
+        '// 2. the director drives the builder — the menu\n' +
+        'const artist = new SandwichArtist(builder);\n' +
+        'console.log(artist.makeGrilledCheese());\n' +
+        'console.log(artist.makeClubSandwich());</pre>' +
+        '<p>Run it: <code>node builder/builder.ts</code>. The first reads like a sentence and bends ' +
+        'to any request; the second keeps each recipe in one place so callers can\'t get it wrong. ' +
+        'Per the GoF and ' +
+        '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">' +
+        'Refactoring.Guru</a>, the director is <i>optional</i> — worth a line in your post.</p>' +
+        '<p><b>To make it stick:</b></p>' +
         '<ul style="margin:8px 0 0; padding-left:18px;">' +
         '<li><b>Now:</b> draft the <i>Dissection</i> section of your post from memory, one heading ' +
           'per role — then check back against your code.</li>' +
@@ -109,8 +124,6 @@ module.exports = {
       '',
       '// -- STEP 4 - DIRECTOR -----------------------------------------',
       '',
-      '',
-      '// -- STEP 5 - USAGE --------------------------------------------',
       ''
     ].join('\n'),
 
@@ -362,47 +375,6 @@ module.exports = {
                 return msg + ' (Recipe: reset, wheat, swiss, turkey, bacon, toasted. ' +
                   'Start the recipe with reset() — a director can\'t assume the builder is clean.)';
               }
-            }
-          }
-        ]
-      },
-
-      {
-        title: 'Usage — two ways to order',
-        chip: 'blog: Usage',
-        body:
-          '<p>You already have both usage modes in your file — make sure all four ' +
-          '<code>console.log</code> lines from the checkpoints are present and run together:</p><ul>' +
-          '<li><b>Client drives the builder directly</b> — the custom pastrami-on-rye. Flexible, ' +
-            'reads like a sentence.</li>' +
-          '<li><b>Director drives the builder</b> — the menu. Recipes live in one place; callers ' +
-            'can\'t get them wrong.</li></ul>' +
-          '<p class="why">Per the GoF and ' +
-          '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">' +
-          'Refactoring.Guru</a>, the Director is <i>optional</i> — client code may call the steps ' +
-          'itself. Worth saying in your post.</p>' +
-          '<p><b>Also try it for real:</b> <code>node sandbox/builder-pattern.ts</code> in the blog ' +
-          'repo (if you\'ve been working in the in-page editor, paste your code into the sandbox file ' +
-          'first).</p>',
-        checks: [
-          {
-            name: 'four sandwiches logged',
-            run: function (c) {
-              if (c.logs.length < 4) {
-                return 'Expected four console.log lines — the default sandwich, the custom order, ' +
-                  'and the two menu items. Found ' + c.logs.length + '.';
-              }
-            }
-          },
-          {
-            name: 'both usage modes are exercised',
-            run: function (c) {
-              var all = c.logs.join('\n');
-              var missing = [];
-              if (all.indexOf('pastrami') === -1) missing.push('the custom pastrami order (client-driven)');
-              if (all.indexOf('cheddar') === -1) missing.push('makeGrilledCheese() (director-driven)');
-              if (all.indexOf('turkey') === -1) missing.push('makeClubSandwich() (director-driven)');
-              if (missing.length) return 'Not logged yet: ' + missing.join(', ') + '.';
             }
           }
         ]
