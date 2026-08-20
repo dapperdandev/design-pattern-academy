@@ -14,3 +14,10 @@ scratch/
 # not used (no build, no dependencies) but harmless insurance
 node_modules/
 *.vsix
+
+# scaffolded exercise output — appears if you open THIS repo as the workspace.
+# Learner artifacts, not extension source; your real work belongs in its own folder.
+/tsconfig.json
+/dpa-globals.d.ts
+/builder/
+/design-pattern-academy/
