@@ -6,3 +6,12 @@ test/**
 sandbox/**
 scratch/**
 **/*.vsix
+
+# Scaffolded exercise output, if this repo has ever been opened as the workspace:
+# solved exercises are learner artifacts and must not ship inside the extension.
+# The extension carries no TypeScript of its own — tsconfig.json and the globals
+# file are string constants in extension.js — so excluding every .ts covers each
+# new pattern folder without another entry here.
+**/*.ts
+tsconfig.json
+dpa-globals.d.ts
