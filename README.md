@@ -53,7 +53,8 @@ Exercises go in the **folder you have open** — best used with a dedicated fold
   tsconfig.json         one shared config for all patterns: strict, ES2020, no ambient types
   dpa-globals.d.ts      one shared file: declares console (the ES2020 lib doesn't have it)
   builder/builder.ts    your code, one subfolder per pattern
-  factory-method/...
+  strategy/strategy.ts
+  factory-method/factory-method.ts
 ```
 
 The two support files exist because the TypeScript server discovers configuration by
@@ -141,6 +142,9 @@ transformation. These fail at runtime, so warn learners in the prose:
 
 Declare the field and assign it in the constructor body instead.
 
+`abstract` is fine — the modifier and the bodiless method are both erased. Which means
+`new SomeAbstractClass()` *runs*: like `readonly`, it's caught by the type-checker alone.
+
 ## Tests
 
 ```bash
@@ -148,10 +152,11 @@ node test/run-tests.js
 ```
 
 Stubs the `vscode` module so it runs outside VS Code. Checks that every command declared in
-`package.json` is registered, that every exercise definition is well-formed, that the
-reference solution scores full marks, and that the traps we care about still fail —
-including that `readonly` *runs* fine, which is precisely why gating on VS Code's type
-errors is not optional.
+`package.json` is registered, that every exercise definition is well-formed, that each
+reference solution scores full marks and logs exactly what `node` prints, that the mistakes
+each exercise warns about are actually caught, that no two exercises claim the same top-level
+name, and that the traps we care about still fail — including that `readonly` and `abstract`
+both *run* fine, which is precisely why gating on VS Code's type errors is not optional.
 
 ## Teaching workspace
 

@@ -7,7 +7,15 @@ pattern at a time.
 
 **Creational pattern**
 : A pattern about *how objects get made* — hiding or organising instantiation. Covered so far:
-Singleton, Builder. Queued: Factory Method, Abstract Factory, Prototype.
+Singleton, Builder, Factory Method. Queued: Abstract Factory, Prototype.
+
+**Behavioral pattern**
+: A pattern about *how objects collaborate* — who calls whom, and what varies at run time.
+Covered so far: Strategy. Queued: Observer, Command, Iterator.
+
+**Structural pattern**
+: A pattern about *how objects are composed* into larger shapes. Queued: Adapter, Decorator,
+Facade, Proxy.
 
 ## Builder roles
 
@@ -33,6 +41,43 @@ Optional — clients may drive the steps themselves
 : Code that picks a concrete builder and either hands it to a director (menu order) or chains
 steps directly (custom order).
 
+## Strategy roles
+
+**Strategy** (interface)
+: The contract for one interchangeable algorithm. Usually a single method; the narrower it is,
+the cheaper a new algorithm is to add.
+
+**Concrete Strategy**
+: One whole algorithm behind that interface. Shares the interface, never a base class. Best kept
+stateless — everything it needs arrives as the argument.
+
+**Context**
+: Holds a strategy and delegates to it. Types its field, constructor and setter to the
+*interface*, implements no algorithm of its own, and decides nothing about which one applies.
+
+**Client**
+: Code that picks the concrete strategy and hands it to the context. The choice belongs here —
+a context that chooses has the branch back inside it
+([Refactoring.Guru](https://refactoring.guru/design-patterns/strategy)).
+
+## Factory Method roles
+
+**Creator**
+: Declares the factory method without implementing it, and calls it from its own logic. That
+surrounding logic is what earns the role — a creator that only calls `new` should be a function.
+
+**Concrete Creator**
+: Overrides the factory method to return one concrete product, and does nothing else. Everything
+shared stays in the creator.
+
+**Factory method**
+: The method declared where it is *used* and implemented where the choice is *known*. Returns
+the product interface, and a fresh product on every call.
+
+**Concrete Product**
+: One real implementation of the product interface — named in exactly one place, the concrete
+creator that returns it.
+
 ## Techniques and smells
 
 **Fluent API / method chaining**
@@ -44,6 +89,20 @@ so subclasses chain correctly.
 **Telescoping constructor**
 : A constructor (or overload pile) with many mostly-optional positional parameters:
 `new Sandwich('rye', 'swiss', [], true)`. The classic motivation for Builder.
+
+**Simple factory**
+: A standalone function or `static` method that switches on an argument and returns one of
+several classes. Common and useful, but not a GoF pattern — and not Factory Method, which puts
+the choice in a *subclass* of the class that uses it.
+
+**Structural typing**
+: TypeScript compares shapes, not declared lineage: any object with a `quote(parcel)` method
+*is* a `ShippingStrategy`, with no `implements` needed. This is why a one-method strategy can
+collapse into a plain function.
+
+**Delegation**
+: Holding another object and forwarding work to it, instead of inheriting or branching. The
+mechanism behind Strategy's context — and the reason the algorithm can change at run time.
 
 **Sentinel value**
 : A real value standing in for absence — a `'none'` member of a union, `-1` for "not found".
@@ -58,6 +117,14 @@ static `getInstance()`).
 **Builder**
 : Separates the construction of a complex object from its representation so the same process can
 create different representations (GoF). See the [cheat sheet](builder-pattern.md).
+
+**Strategy**
+: Defines a family of interchangeable algorithms behind one interface, so the algorithm can vary
+independently of the code using it (GoF). See the [cheat sheet](strategy-pattern.md).
+
+**Factory Method**
+: Declares a creating method in a base class and lets subclasses decide which class to
+instantiate (GoF). See the [cheat sheet](factory-method-pattern.md).
 
 ---
 

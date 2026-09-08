@@ -7,6 +7,7 @@
  */
 'use strict';
 
+const fs = require('node:fs');
 const path = require('node:path');
 const Module = require('node:module');
 const assert = require('node:assert');
@@ -146,7 +147,26 @@ test('sidebar tree lists exercises with progress and reference sheets', () => {
   assert.ok(refRoot, 'reference sheets node exists');
   const refs = provider.getChildren(refRoot);
   assert.ok(refs.some((r) => r.command.arguments[0] === 'builder-pattern.md'));
+  assert.ok(refs.some((r) => r.command.arguments[0] === 'strategy-pattern.md'));
+  assert.ok(refs.some((r) => r.command.arguments[0] === 'factory-method-pattern.md'));
   assert.ok(refs.some((r) => r.command.arguments[0] === 'design-patterns-glossary.md'));
+});
+
+test('exercises are listed in meta.number order', () => {
+  assert.deepEqual(extension.listExercises().map((e) => e.id),
+    ['builder', 'strategy', 'factory-method']);
+});
+
+test('every exercise has a reference sheet of its own', () => {
+  for (const { def } of extension.listExercises()) {
+    const sheets = (def.meta.references || []).filter((r) => r.name);
+    for (const sheet of sheets) {
+      assert.ok(fs.existsSync(path.join(ROOT, 'reference', sheet.name)),
+        def.meta.id + ': missing reference/' + sheet.name);
+    }
+    assert.ok(sheets.some((r) => r.name === def.meta.id + '-pattern.md'),
+      def.meta.id + ': should link its own cheat sheet');
+  }
 });
 
 test('panel renders with a CSP nonce and no un-nonced script', () => {
@@ -284,6 +304,255 @@ test('field declaration order is not required', () => {
   assert.equal(runChecks(def, reordered).steps.filter((s) => s.passed).length, def.steps.length);
 });
 
+// ---------------------------------------------------------------- grading: strategy
+section('== grading: strategy ==');
+
+const strategyDef = require(path.join(ROOT, 'exercises/strategy.js'));
+
+const STRATEGY_SOLUTION = `
+type Parcel = {
+  weightKg: number;
+  distanceKm: number;
+};
+
+interface ShippingStrategy {
+  quote(parcel: Parcel): number;
+}
+
+class StandardShipping implements ShippingStrategy {
+  quote(parcel: Parcel): number {
+    return 5 + 2 * parcel.weightKg;
+  }
+}
+
+class OvernightShipping implements ShippingStrategy {
+  quote(parcel: Parcel): number {
+    const longHaul = parcel.distanceKm > 100 ? 25 : 0;
+    return 12 + 3 * parcel.weightKg + longHaul;
+  }
+}
+
+class Checkout {
+  private strategy: ShippingStrategy;
+
+  constructor(strategy: ShippingStrategy) {
+    this.strategy = strategy;
+  }
+
+  setStrategy(strategy: ShippingStrategy): void {
+    this.strategy = strategy;
+  }
+
+  quote(parcel: Parcel): number {
+    return this.strategy.quote(parcel);
+  }
+}
+
+type QuoteFn = (parcel: Parcel) => number;
+
+function asStrategy(quote: QuoteFn): ShippingStrategy {
+  return { quote };
+}
+
+const books: Parcel = { weightKg: 2, distanceKm: 50 };
+const desk: Parcel = { weightKg: 10, distanceKm: 400 };
+
+const checkout = new Checkout(new StandardShipping());
+console.log(checkout.quote(books));
+console.log(checkout.quote(desk));
+
+checkout.setStrategy(new OvernightShipping());
+console.log(checkout.quote(books));
+console.log(checkout.quote(desk));
+
+checkout.setStrategy(asStrategy(() => 0));
+console.log(checkout.quote(desk));
+`;
+
+test('strategy: the starting scaffold fails step 1 cleanly', () => {
+  const r = runChecks(strategyDef, strategyDef.scaffold);
+  assert.equal(r.fatal, false);
+  assert.equal(r.steps[0].passed, false);
+});
+
+test('strategy: the reference solution passes every step and every check', () => {
+  const r = runChecks(strategyDef, STRATEGY_SOLUTION);
+  assert.equal(r.error, null, 'unexpected error: ' + r.error);
+  assert.equal(r.steps.filter((s) => s.passed).length, strategyDef.steps.length);
+  const total = strategyDef.steps.reduce((n, s) => n + s.checks.length, 0);
+  const green = r.steps.reduce((n, s) => n + s.checks.filter((c) => c.pass).length, 0);
+  assert.equal(green, total, `expected ${total} green checks, got ${green}`);
+});
+
+test('strategy: logged output matches what `node` prints', () => {
+  const r = runChecks(strategyDef, STRATEGY_SOLUTION);
+  assert.deepEqual(r.logs, ['9', '25', '18', '67', '0']);
+});
+
+test('strategy: a context typed to a concrete rate is caught', () => {
+  const r = runChecks(strategyDef,
+    STRATEGY_SOLUTION.replace(/strategy: ShippingStrategy/g, 'strategy: StandardShipping'));
+  assert.equal(r.steps[2].passed, false);
+  assert.match(r.steps[2].checks.find((c) => !c.pass).message, /should take a `ShippingStrategy`/);
+});
+
+test('strategy: a context that implements the rate itself is caught', () => {
+  const r = runChecks(strategyDef, STRATEGY_SOLUTION.replace(
+    'return this.strategy.quote(parcel);',
+    'return 5 + 2 * parcel.weightKg;'
+  ));
+  assert.equal(r.steps[2].passed, false, 'the swap must change the answer');
+});
+
+test('strategy: asStrategy() that ignores its function is caught', () => {
+  const r = runChecks(strategyDef,
+    STRATEGY_SOLUTION.replace('return { quote };', 'return { quote: () => 0 };'));
+  assert.equal(r.steps[3].passed, false);
+});
+
+// ---------------------------------------------------------------- grading: factory method
+section('== grading: factory method ==');
+
+const factoryDef = require(path.join(ROOT, 'exercises/factory-method.js'));
+
+const FACTORY_SOLUTION = `
+interface Coffee {
+  name: string;
+  ounces: number;
+  caffeineMg: number;
+}
+
+class Espresso implements Coffee {
+  name = 'espresso';
+  ounces = 1;
+  caffeineMg = 64;
+}
+
+class ColdBrew implements Coffee {
+  name = 'cold brew';
+  ounces = 12;
+  caffeineMg = 200;
+}
+
+abstract class CoffeeStand {
+  cupsServed = 0;
+
+  abstract brew(): Coffee;
+
+  serve(): Coffee {
+    const cup = this.brew();
+    this.cupsServed++;
+    return cup;
+  }
+}
+
+class EspressoBar extends CoffeeStand {
+  brew(): Coffee {
+    return new Espresso();
+  }
+}
+
+class ColdBrewCart extends CoffeeStand {
+  brew(): Coffee {
+    return new ColdBrew();
+  }
+}
+
+const bar = new EspressoBar();
+const cart = new ColdBrewCart();
+
+console.log(bar.serve());
+console.log(cart.serve());
+
+const stands: CoffeeStand[] = [bar, cart];
+for (const stand of stands) {
+  console.log(stand.serve().name);
+}
+
+console.log(bar.cupsServed, cart.cupsServed);
+`;
+
+test('factory: the starting scaffold fails step 1 cleanly', () => {
+  const r = runChecks(factoryDef, factoryDef.scaffold);
+  assert.equal(r.fatal, false);
+  assert.equal(r.steps[0].passed, false);
+});
+
+test('factory: the reference solution passes every step and every check', () => {
+  const r = runChecks(factoryDef, FACTORY_SOLUTION);
+  assert.equal(r.error, null, 'unexpected error: ' + r.error);
+  assert.equal(r.steps.filter((s) => s.passed).length, factoryDef.steps.length);
+  const total = factoryDef.steps.reduce((n, s) => n + s.checks.length, 0);
+  const green = r.steps.reduce((n, s) => n + s.checks.filter((c) => c.pass).length, 0);
+  assert.equal(green, total, `expected ${total} green checks, got ${green}`);
+});
+
+test('factory: logged output matches what `node` prints', () => {
+  const r = runChecks(factoryDef, FACTORY_SOLUTION);
+  assert.deepEqual(r.logs, [
+    "Espresso { name: 'espresso', ounces: 1, caffeineMg: 64 }",
+    "ColdBrew { name: 'cold brew', ounces: 12, caffeineMg: 200 }",
+    'espresso',
+    'cold brew',
+    '2 2'
+  ]);
+});
+
+test('factory: a creator that brews for itself instead of delegating is caught', () => {
+  const r = runChecks(factoryDef,
+    FACTORY_SOLUTION.replace('const cup = this.brew();', 'const cup = new Espresso();'));
+  assert.equal(r.steps[2].passed, false);
+  assert.match(r.steps[2].checks.find((c) => !c.pass).message, /should call this\.brew\(\)/);
+});
+
+test('factory: the creator\'s own logic is exercised — a missing tally is caught', () => {
+  const r = runChecks(factoryDef, FACTORY_SOLUTION.replace('    this.cupsServed++;\n', ''));
+  assert.equal(r.steps[2].passed, false);
+});
+
+test('factory: a factory method handing out a stored product is caught', () => {
+  const r = runChecks(factoryDef, FACTORY_SOLUTION.replace(
+    'class EspressoBar extends CoffeeStand {\n  brew(): Coffee {\n    return new Espresso();\n  }\n}',
+    'class EspressoBar extends CoffeeStand {\n  private cup: Coffee = new Espresso();\n  brew(): Coffee {\n    return this.cup;\n  }\n}'
+  ));
+  assert.equal(r.steps[3].passed, false);
+  assert.match(r.steps[3].checks.find((c) => !c.pass).message, /same object twice/);
+});
+
+test('factory: a factory method narrowed to the concrete product is caught', () => {
+  const r = runChecks(factoryDef, FACTORY_SOLUTION.replace(
+    'class ColdBrewCart extends CoffeeStand {\n  brew(): Coffee {',
+    'class ColdBrewCart extends CoffeeStand {\n  brew(): ColdBrew {'
+  ));
+  assert.equal(r.steps[3].passed, false);
+});
+
+// ---------------------------------------------------------------- shared global scope
+section('== shared global scope ==');
+
+// Exercise files share one tsconfig and therefore one global scope, so a name used
+// by two exercises is a duplicate-identifier error in the learner's editor. This is
+// the authoring rule from the README, mechanised.
+test('no two exercises declare the same top-level name', () => {
+  const owners = new Map();
+  const clashes = [];
+  const solutions = [
+    ['builder', SOLUTION],
+    ['strategy', STRATEGY_SOLUTION],
+    ['factory-method', FACTORY_SOLUTION]
+  ];
+  for (const [id, src] of solutions) {
+    const declared = [
+      ...src.matchAll(/^(?:abstract\s+)?(?:class|interface|type|function|const|let)\s+([A-Za-z_$][\w$]*)/gm)
+    ].map((m) => m[1]);
+    for (const name of declared) {
+      if (owners.has(name)) clashes.push(`${name} (${owners.get(name)} + ${id})`);
+      else owners.set(name, id);
+    }
+  }
+  assert.deepEqual(clashes, [], 'clashing top-level names: ' + clashes.join(', '));
+});
+
 // ---------------------------------------------------------------- runtime limits
 section('== runtime ==');
 
@@ -307,6 +576,13 @@ test('readonly still runs — proof that gating on VS Code type errors is requir
   assert.equal(r.fatal, false);
   assert.equal(r.steps.filter((s) => s.passed).length, def.steps.length,
     'behaviour is unaffected; only the type-check catches this');
+});
+
+test('`abstract` still runs — the same lesson as readonly, one exercise later', () => {
+  const r = runChecks(factoryDef, FACTORY_SOLUTION + '\nconsole.log(new (CoffeeStand as never)());\n');
+  assert.equal(r.fatal, false, 'both the modifier and the bodiless method are simply erased');
+  assert.equal(r.steps.filter((s) => s.passed).length, factoryDef.steps.length,
+    'instantiating an abstract class is a type error only — nothing stops it at runtime');
 });
 
 test('an endless loop is stopped instead of hanging the extension host', () => {
