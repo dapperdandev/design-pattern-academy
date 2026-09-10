@@ -160,6 +160,15 @@
     }
   });
 
+  // ---------- intro ----------
+  // Remembered in extension state, so collapsing it sticks past this panel.
+  const intro = document.querySelector('details.intro');
+  if (intro) {
+    intro.addEventListener('toggle', () => {
+      vscode.postMessage({ type: 'intro', open: intro.open });
+    });
+  }
+
   // ---------- actions ----------
   document.getElementById('run').addEventListener('click', () => vscode.postMessage({ type: 'runChecks' }));
   document.getElementById('openFile').addEventListener('click', () => vscode.postMessage({ type: 'openFile' }));

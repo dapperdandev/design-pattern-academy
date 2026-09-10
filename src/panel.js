@@ -90,6 +90,10 @@ function panelHtml(webview, extRoot, def, progress) {
     quizCount: (def.quiz || []).length,
     progress: progress || { quiz: [], steps: [] }
   };
+  // Expanded until the learner collapses it — they have read it by then, and the
+  // choice is remembered, so the explanation stays one click away without sitting
+  // above the steps on every visit.
+  const introOpen = payload.progress.intro !== false;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -114,7 +118,14 @@ function panelHtml(webview, extRoot, def, progress) {
 </header>
 
 <main>
-  ${meta.intro ? `<section class="intro">${meta.intro}</section>` : ''}
+  ${
+    meta.intro
+      ? `<details class="intro"${introOpen ? ' open' : ''}>
+    <summary>About this pattern</summary>
+    ${meta.intro}
+  </details>`
+      : ''
+  }
   ${meta.howto ? `<p class="howto">${meta.howto}</p>` : ''}
 
   <div id="results" class="results"><p class="dim">Write step 1, then save the file — checks run automatically.</p></div>

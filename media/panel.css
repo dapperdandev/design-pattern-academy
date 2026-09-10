@@ -50,6 +50,11 @@ a:hover, .linkish:hover { text-decoration: underline; color: var(--vscode-textLi
   border: 1px solid var(--vscode-panel-border); border-radius: 6px;
   background: var(--vscode-textBlockQuote-background);
 }
+.intro > summary { color: var(--vscode-foreground); font-weight: 600; }
+.intro[open] > summary {
+  margin-bottom: 9px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
 .intro .lede { font-size: 13.5px; margin: 0 0 9px; }
 .intro h3 {
   font-size: 11px; text-transform: uppercase; letter-spacing: .07em;

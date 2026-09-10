@@ -179,6 +179,17 @@ test('every exercise explains the pattern before the first step', () => {
   }
 });
 
+test('the explanation is collapsible, and starts expanded', () => {
+  const { def } = extension.listExercises()[0];
+  const panel = fakeVscode.window.createWebviewPanel();
+  const fresh = panelHtml(panel.webview, ROOT, def, { quiz: [], steps: [] });
+  assert.match(fresh, /<details class="intro" open>/, 'expanded until the learner collapses it');
+  assert.match(fresh, /<summary>About this pattern<\/summary>/);
+  const collapsed = panelHtml(panel.webview, ROOT, def, { quiz: [], steps: [], intro: false });
+  assert.match(collapsed, /<details class="intro">/, 'a collapsed intro stays collapsed');
+  assert.doesNotMatch(collapsed, /class="intro" open/);
+});
+
 // The lessons are the product. Anything that only makes sense to the author — a private
 // repo path, "your post", a note about the session that wrote it — is a bug in a public
 // extension, so it fails the build rather than waiting to be noticed.

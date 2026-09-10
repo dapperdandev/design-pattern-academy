@@ -226,7 +226,11 @@ class Session {
   progress() {
     return {
       quiz: this.context.globalState.get(this.key('quiz'), []),
-      steps: this.context.globalState.get(this.key('steps'), [])
+      steps: this.context.globalState.get(this.key('steps'), []),
+      // Whether the lesson's explanation is expanded. Open until collapsed, and it
+      // stays how the learner left it — a UI preference, not progress, so it is not
+      // counted in the sidebar and survives a reset.
+      intro: this.context.globalState.get(this.key('intro'), true)
     };
   }
 
@@ -287,6 +291,9 @@ class Session {
       const quiz = this.context.globalState.get(this.key('quiz'), []);
       quiz[msg.index] = true;
       this.context.globalState.update(this.key('quiz'), quiz).then(() => this.notifyProgress());
+    }
+    if (msg.type === 'intro') {
+      this.context.globalState.update(this.key('intro'), !!msg.open);
     }
     if (msg.type === 'reference') {
       openReference(msg.name);
