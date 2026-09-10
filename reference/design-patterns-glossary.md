@@ -1,17 +1,17 @@
 # Design Patterns — Glossary
 
-Shared vocabulary for the series. Every exercise sticks to these definitions. Grows one
+Shared vocabulary for these exercises — every lesson sticks to these definitions. Grows one
 pattern at a time.
 
 ## Categories
 
 **Creational pattern**
-: A pattern about *how objects get made* — hiding or organising instantiation. Covered so far:
-Singleton, Builder, Factory Method. Queued: Abstract Factory, Prototype.
+: A pattern about *how objects get made* — hiding or organising instantiation. Exercises so far:
+Builder, Factory Method. Queued: Abstract Factory, Prototype, Singleton.
 
 **Behavioral pattern**
 : A pattern about *how objects collaborate* — who calls whom, and what varies at run time.
-Covered so far: Strategy. Queued: Observer, Command, Iterator.
+Exercises so far: Strategy. Queued: Observer, Command, Iterator.
 
 **Structural pattern**
 : A pattern about *how objects are composed* into larger shapes. Queued: Adapter, Decorator,

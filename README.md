@@ -3,8 +3,9 @@
 A VS Code extension for learning design patterns by implementing them. Lesson on one
 side, your own TypeScript file on the other, gated steps and automated checks in between.
 
-Companion to the blog series in `../blog` (`docs/posts/anatomy/`). Each exercise maps onto
-the sections of its post, so finishing one leaves you ready to write.
+Each lesson opens with the pattern explained — what it is, the code you'd write without it,
+the cast of roles — then has you build those roles one at a time, and finishes by making you
+use what you built. Cheat sheets under `reference/` are the durable version.
 
 ## Why an extension
 
@@ -108,6 +109,11 @@ check — it teaches the learner that correct code is broken. Node 24 runs `.ts`
 
 ### Authoring guidance
 
+- **Explain the pattern before the first step.** `meta.intro` is where a reader who knows
+  nothing about it learns what it is, what it fixes, and which roles they're about to build.
+  Steps teach one role each; they are not the place for the overview.
+- **Self-contained.** Link public sources only. No private repos, notes or side projects, and
+  nothing that assumes the reader is the author.
 - **One tangible win per exercise.** Keep each step inside working memory: teach only the
   knowledge that step needs, then make the learner produce something.
 - **Checks are feedback, not a grade.** Every failure message should say what to do next.
@@ -116,6 +122,10 @@ check — it teaches the learner that correct code is broken. Node 24 runs `.ts`
   it's copy-paste that teaches nothing, and it makes checks brittle to formatting.
   Field assertions also give better failures — `cheese should be "cheddar" but was "swiss"`
   beats a whole-string diff.
+- **Grade behaviour, not typography.** Numbers, identity and union-typed values compare
+  exactly; a *display* string compares loosely (lowercase, strip non-alphanumerics), because
+  failing someone for `'Cold Brew'` teaches them nothing about the pattern. Say so in the
+  prose, so the leniency is visible rather than lucky.
 - **Don't check types.** VS Code does that, and the extension already blocks on it. Your
   checks are about behaviour.
 - **Top-level names must be unique across all exercises.** Every exercise file shares one
@@ -158,9 +168,6 @@ each exercise warns about are actually caught, that no two exercises claim the s
 name, and that the traps we care about still fail — including that `readonly` and `abstract`
 both *run* fine, which is precisely why gating on VS Code's type errors is not optional.
 
-## Teaching workspace
-
-The learner-facing state for this series — mission, resources, notes, learning records —
-lives in the blog repo (`../blog/MISSION.md`, `RESOURCES.md`, `NOTES.md`,
-`learning-records/`), because it's about publishing the posts. This repo is only the
-exercise platform.
+Two of those tests exist to keep the lessons honest as the set grows: every exercise must
+carry an up-front explanation with its cast of roles, and no lesson may refer to a private
+repo, notes, or project. A lesson that only makes sense to its author isn't a lesson.

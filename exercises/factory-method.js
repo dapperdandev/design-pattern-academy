@@ -11,12 +11,28 @@
  */
 'use strict';
 
-var CUP_FIELDS = ['name', 'ounces', 'caffeineMg'];
+var CUP_FIELDS = ['ounces', 'caffeineMg'];
+
+/**
+ * `name` is a display string, so it is compared loosely — case and spacing are the
+ * learner's business, and failing someone for 'Cold Brew' would be grading typography
+ * rather than the pattern. The numbers are compared exactly.
+ */
+function looseName(value) {
+  return String(value).toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
 /** Compare a cup against an expected field set. Returns a message, or null when it matches. */
 function cupWrong(got, want, what) {
   if (!got || typeof got !== 'object') {
     return what + ' should return a cup object, but returned ' + JSON.stringify(got) + '.';
+  }
+  if (typeof got.name !== 'string' || !got.name) {
+    return what + ': name should be a non-empty string but was ' + JSON.stringify(got.name) + '.';
+  }
+  if (looseName(got.name) !== looseName(want.name)) {
+    return what + ': name should be ' + JSON.stringify(want.name) + ' (any capitalisation or ' +
+      'spacing) but was ' + JSON.stringify(got.name) + '.';
   }
   for (var i = 0; i < CUP_FIELDS.length; i++) {
     var k = CUP_FIELDS[i];
@@ -57,10 +73,47 @@ module.exports = {
       category: 'Creational',
       blurb: 'One stand, two drinks, and a base class that serves a cup it never names. Product, ' +
              'Concrete Product, Creator, Concrete Creator.',
-      missionNote: '<b>Mission tie-in:</b> what you write here becomes the <i>Example</i> and ' +
-        '<i>Dissection</i> sections of <code>docs/posts/drafts/factory-method-pattern.md</code> in ' +
-        'the blog repo. Builder assembled one object; Factory Method hands the <i>choice of class</i> ' +
-        'to a subclass.',
+      intro:
+        '<p class="lede"><b>Factory Method</b> moves the choice of <i>which class to instantiate</i> ' +
+        'into a subclass: a base class declares the creating method, calls it from its own logic, ' +
+        'and never names a concrete product.</p>' +
+        '<h3>The problem it solves</h3>' +
+        '<p>A class that does real work <i>around</i> creating something still has to name the thing ' +
+        'it creates:</p>' +
+        '<pre class="snippet">serve(kind: string): Coffee {\n' +
+        '  const cup = kind === \'espresso\' ? new Espresso() : new ColdBrew();\n' +
+        '  this.cupsServed++;\n' +
+        '  return cup;\n' +
+        '}</pre>' +
+        '<p>Now every new drink edits this method, and the class depends on every drink there is. ' +
+        'Factory Method leaves the surrounding logic exactly where it is and hands the ' +
+        '<code>new</code> to a subclass.</p>' +
+        '<h3>The cast</h3>' +
+        '<table>' +
+        '<tr><th>Product</th><td>The type every other role deals in, so none of them names a ' +
+          'concrete class. — <code>Coffee</code></td></tr>' +
+        '<tr><th>Concrete Product</th><td>One real implementation. — <code>Espresso</code>, ' +
+          '<code>ColdBrew</code></td></tr>' +
+        '<tr><th>Creator</th><td>Declares the factory method without implementing it, and uses it ' +
+          'in logic of its own. — <code>CoffeeStand</code></td></tr>' +
+        '<tr><th>Concrete Creator</th><td>Overrides the factory method to return one concrete ' +
+          'product, and does nothing else. — <code>EspressoBar</code>, ' +
+          '<code>ColdBrewCart</code></td></tr>' +
+        '<tr><th>Client</th><td>Holds a creator, calls its operations, never sees a concrete ' +
+          'product. — your code at the bottom of the file</td></tr>' +
+        '</table>' +
+        '<h3>Reach for it when…</h3>' +
+        '<ul><li>a class does useful work around creating something, but shouldn\'t know ' +
+          '<i>which</i> something</li>' +
+        '<li>you want a new variant to be a new subclass rather than an edit to a ' +
+          '<code>switch</code></li></ul>' +
+        '<h3>…and skip it when</h3>' +
+        '<p>nothing surrounds the creation. A function that returns the right class — a ' +
+        '<i>simple factory</i> — is then simpler and more honest. That function is what people ' +
+        'usually mean by "a factory", and it is <b>not</b> this pattern: the difference is the ' +
+        'creator\'s own logic, and that a subclass makes the choice.</p>' +
+        '<p>You will build the four roles in the order above — each step explains one, then ' +
+        'checks it.</p>',
       howto: 'Write your code in <code>factory-method.ts</code> beside this panel. Every save ' +
         're-runs the checks, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Enter</kbd>. Type errors ' +
         'come from VS Code itself — if it\'s underlined in the editor, fix that first. You can also ' +
@@ -82,18 +135,18 @@ module.exports = {
         'for (const stand of stands) {\n' +
         '  console.log(stand.serve());\n' +
         '}</pre>' +
-        '<p>Run it: <code>node factory-method/factory-method.ts</code>. Then add a third stand and ' +
-        'watch the loop pick it up untouched — that is the return on the pattern.</p>' +
+        '<p>Run it: <code>node factory-method/factory-method.ts</code>.</p>' +
         '<p><b>To make it stick:</b></p>' +
         '<ul style="margin:8px 0 0; padding-left:18px;">' +
-        '<li><b>Now:</b> draft the <i>Dissection</i> section of your post from memory, one heading ' +
-          'per role — then check back against your code.</li>' +
-        '<li><b>Next:</b> answer this in your <i>Introduction</i>: what does the creator get that a ' +
-          'plain <code>makeCoffee(kind)</code> function does not? (Look at what ' +
-          '<code>serve()</code> does around the <code>brew()</code> call.)</li>' +
-        '<li><b>In ~2 days:</b> rebuild the file cold. Spaced retrieval beats rereading.</li>' +
-        '<li><b>Then:</b> tell Claude you\'re done — I\'ll review your code against the pattern ' +
-          'and help outline the post.</li></ul>'
+        '<li><b>Now:</b> add a third stand and watch the loop pick it up untouched. Nothing above ' +
+          'the new class should need a line changed.</li>' +
+        '<li><b>Next:</b> answer this in your own words: what does the creator get that a plain ' +
+          '<code>makeCoffee(kind)</code> function does not? Look at what <code>serve()</code> does ' +
+          '<i>around</i> the <code>brew()</code> call — if you can\'t point at anything, the ' +
+          'function is the better design.</li>' +
+        '<li><b>Then:</b> say from memory how this differs from Abstract Factory. One product ' +
+          'chosen by subclass, or a family of products that must match?</li>' +
+        '<li><b>In ~2 days:</b> rebuild the file cold. Spaced retrieval beats rereading.</li></ul>'
     },
 
     // The Coffee interface is erased at runtime, so step 1 is checked against
@@ -129,7 +182,7 @@ module.exports = {
     steps: [
       {
         title: 'The Product interface',
-        chip: 'blog: Dissection → Product',
+        chip: 'role: Product',
         body:
           '<p>The <b>Product</b> is what gets created — but as an <i>interface</i>, not a class. That ' +
           'is the point of the whole pattern: every other role deals in this type, so nobody has to ' +
@@ -165,12 +218,15 @@ module.exports = {
 
       {
         title: 'Concrete Products',
-        chip: 'blog: Dissection → Concrete Product',
+        chip: 'role: Concrete Product',
         body:
           '<p>Two drinks, each a class that <code>implements Coffee</code> with its values baked in. ' +
           '<b>Write both:</b></p><ul>' +
           '<li><code>Espresso</code> — <code>\'espresso\'</code>, 1 oz, 64 mg</li>' +
           '<li><code>ColdBrew</code> — <code>\'cold brew\'</code>, 12 oz, 200 mg</li></ul>' +
+          '<p class="why"><code>name</code> is a display string, so the checks compare it loosely — ' +
+          '<code>\'Cold Brew\'</code> and <code>\'cold brew\'</code> both pass, and your spelling is ' +
+          'what shows up in the log below. The two numbers are compared exactly.</p>' +
           '<details class="hint"><summary>Hint — the shape of one</summary>' +
           '<pre class="snippet">class Espresso implements Coffee {\n' +
           '  name = \'espresso\';\n' +
@@ -213,7 +269,7 @@ module.exports = {
 
       {
         title: 'The Creator',
-        chip: 'blog: Dissection → Creator',
+        chip: 'role: Creator',
         body:
           '<p>Here is the role that gives the pattern its name. The <b>Creator</b> declares a ' +
           '<i>factory method</i> it does not implement, and then uses it. <b>Write</b> ' +
@@ -290,7 +346,7 @@ module.exports = {
 
       {
         title: 'Concrete Creators',
-        chip: 'blog: Dissection → Concrete Creator',
+        chip: 'role: Concrete Creator',
         body:
           '<p>Each <b>Concrete Creator</b> overrides the factory method to return one concrete ' +
           'product — and that is <i>all</i> it does. <b>Write both:</b></p><ul>' +

@@ -47,11 +47,44 @@ module.exports = {
       emoji: '🥪',
       domain: 'Sandwich shop',
       category: 'Creational',
-      blurb: 'Assemble a sandwich step by step. Product, Builder, Concrete Builder, ' +
-             'Director — your first pattern where roles collaborate.',
-      missionNote: '<b>Mission tie-in:</b> everything you write here becomes the <i>Example</i> and ' +
-        '<i>Dissection</i> sections of <code>docs/posts/drafts/builder-pattern.md</code> in the blog ' +
-        'repo. Singleton was one class; Builder is your first pattern where <i>roles collaborate</i>.',
+      blurb: 'Assemble a sandwich step by step. Product, Builder, Concrete Builder, Director — ' +
+             'four roles that have to collaborate, and an escape from unreadable constructors.',
+      intro:
+        '<p class="lede"><b>Builder</b> separates <i>how</i> an object is put together from ' +
+        '<i>what</i> it ends up being, so one step-by-step process can produce many different ' +
+        'results.</p>' +
+        '<h3>The problem it solves</h3>' +
+        '<p>A class with several mostly-optional fields grows a constructor nobody can read:</p>' +
+        '<pre class="snippet">new Sandwich(\'rye\', \'swiss\', [\'pastrami\'], true);\n' +
+        '// …and the boolean means?</pre>' +
+        '<p>That is the <a href="https://refactoring.guru/design-patterns/builder" ' +
+        'target="_blank">telescoping constructor</a>: every new option adds a parameter, and ' +
+        'callers pass a row of values with nothing to say what they are. Builder replaces it with ' +
+        'one <i>named step per part</i>, and a <code>build()</code> that hands over the finished ' +
+        'object.</p>' +
+        '<h3>The cast</h3>' +
+        '<table>' +
+        '<tr><th>Product</th><td>The object being assembled. Knows nothing about builders. ' +
+          '— <code>Sandwich</code></td></tr>' +
+        '<tr><th>Builder</th><td>Interface declaring the construction steps. ' +
+          '— <code>SandwichBuilder</code></td></tr>' +
+        '<tr><th>Concrete Builder</th><td>Implements the steps against a real product; holds the ' +
+          'work in progress. — <code>DeliSandwichBuilder</code></td></tr>' +
+        '<tr><th>Director <i>(optional)</i></th><td>Knows the recipes: which steps, in which ' +
+          'order. — <code>SandwichArtist</code></td></tr>' +
+        '<tr><th>Client</th><td>Picks a builder, then drives it or hands it to a director. ' +
+          '— your code at the bottom of the file</td></tr>' +
+        '</table>' +
+        '<h3>Reach for it when…</h3>' +
+        '<ul><li>a constructor is telescoping: many parameters, most of them optional</li>' +
+        '<li>the same construction steps should be able to yield different representations</li>' +
+        '<li>construction is genuinely step-wise — assembled over time, finished at the end</li></ul>' +
+        '<h3>…and skip it when</h3>' +
+        '<p>an object literal says it all: <code>new Sandwich({ bread: \'rye\', toasted: true })</code>. ' +
+        'TypeScript\'s optional properties cover many textbook builder cases, and a plain ' +
+        'constructor wins whenever there is one representation and one shot at building it.</p>' +
+        '<p>You will build the four roles in the order above — each step explains one, then ' +
+        'checks it.</p>',
       howto: 'Write your code in <code>builder.ts</code> beside this panel. Every save re-runs the ' +
         'checks, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Enter</kbd>. Type errors come from ' +
         'VS Code itself — if it\'s underlined in the editor, fix that first. You can also run the ' +
@@ -80,19 +113,20 @@ module.exports = {
         'to any request; the second keeps each recipe in one place so callers can\'t get it wrong. ' +
         'Per the GoF and ' +
         '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">' +
-        'Refactoring.Guru</a>, the director is <i>optional</i> — worth a line in your post.</p>' +
+        'Refactoring.Guru</a>, the director is <i>optional</i>.</p>' +
         '<p><b>To make it stick:</b></p>' +
         '<ul style="margin:8px 0 0; padding-left:18px;">' +
-        '<li><b>Now:</b> draft the <i>Dissection</i> section of your post from memory, one heading ' +
-          'per role — then check back against your code.</li>' +
-        '<li><b>After drafting:</b> compare your implementation with ' +
+        '<li><b>Now:</b> write the four roles down from memory, one line each on what it owns — ' +
+          'then check against your code.</li>' +
+        '<li><b>Next:</b> add a second concrete builder — a wrap, a salad bowl — and hand it to ' +
+          'the same <code>SandwichArtist</code>. If a recipe needs editing to cope, the director ' +
+          'was depending on something it shouldn\'t.</li>' +
+        '<li><b>Compare:</b> read ' +
           '<a href="https://refactoring.guru/design-patterns/builder/typescript/example" ' +
           'target="_blank">Refactoring.Guru\'s TS example</a> — note one thing you\'d defend doing ' +
           'differently.</li>' +
-        '<li><b>In ~2 days:</b> delete your sandbox file body and rebuild it cold. ' +
-          'Spaced retrieval beats rereading.</li>' +
-        '<li><b>Then:</b> tell Claude you\'re done — I\'ll review your code against the pattern ' +
-          'and help outline the post.</li></ul>'
+        '<li><b>In ~2 days:</b> delete the body of your file and rebuild it cold. ' +
+          'Spaced retrieval beats rereading.</li></ul>'
     },
 
     // declarations lifted out of the learner's code so checks can exercise them
@@ -130,16 +164,11 @@ module.exports = {
     steps: [
       {
         title: 'The Product',
-        chip: 'blog: Dissection → Product',
+        chip: 'role: Product',
         body:
           '<p>The <b>Product</b> is the complex object being assembled — a <code>Sandwich</code>. ' +
           'It knows <i>nothing</i> about builders, and it needs no methods at all: it is just the ' +
           'fields that describe an order.</p>' +
-          '<p>Why does this pattern exist? Imagine the alternative — one constructor trying to cover ' +
-          'every order: <code>new Sandwich(\'rye\', \'swiss\', [\'pastrami\'], true)</code>. ' +
-          'Four positional arguments, most optional, impossible to read. That\'s the ' +
-          '<a href="https://refactoring.guru/design-patterns/builder" target="_blank">' +
-          '"telescoping constructor"</a> problem Builder solves.</p>' +
           '<p><b>Write:</b></p><ul>' +
           '<li>Type aliases: <code>Bread = \'white\' | \'wheat\' | \'rye\'</code> and ' +
             '<code>Cheese = \'cheddar\' | \'swiss\'</code></li>' +
@@ -184,7 +213,7 @@ module.exports = {
 
       {
         title: 'The Builder interface',
-        chip: 'blog: Dissection → Builder',
+        chip: 'role: Builder',
         body:
           '<p>The <b>Builder</b> declares the construction steps, abstracted away from any particular ' +
           'implementation. Type this in by hand (don\'t paste — read each line as you go):</p>' +
@@ -199,8 +228,8 @@ module.exports = {
           '<p class="why">Every step returns <code>this</code> — TypeScript\'s ' +
           '<a href="https://www.typescriptlang.org/docs/handbook/2/classes.html#this-types" ' +
           'target="_blank">polymorphic <code>this</code> type</a>. That single decision is what makes ' +
-          'chaining (the <b>Fluent API</b> in your blog outline) possible. Only <code>build()</code> ' +
-          'breaks the chain — it hands over the product.</p>' +
+          'chaining possible — a <b>fluent API</b>. Only <code>build()</code> breaks the chain: it ' +
+          'hands over the product.</p>' +
           '<p><b>Checkpoint:</b> run checks. (Fun fact the checker will teach you: interfaces are ' +
           'erased at compile time, so this step is verified by reading your <i>source text</i>, not ' +
           'your running code.)</p>',
@@ -243,7 +272,7 @@ module.exports = {
 
       {
         title: 'The Concrete Builder',
-        chip: 'blog: Dissection → Concrete Builder',
+        chip: 'role: Concrete Builder',
         body:
           '<p>Now the real deli counter: ' +
           '<code>class DeliSandwichBuilder implements SandwichBuilder</code>. It holds one ' +
@@ -314,7 +343,7 @@ module.exports = {
 
       {
         title: 'The Director',
-        chip: 'blog: Dissection → Director',
+        chip: 'role: Director (optional)',
         body:
           '<p>The <b>Director</b> knows the <i>recipes</i>: which steps, in which order. It works ' +
           'against the <code>SandwichBuilder</code> interface — it must never mention ' +
@@ -402,8 +431,8 @@ module.exports = {
         options: ['one global shared instance', 'many optional construction knobs',
                   'too many child classes', 'no public constructor available'],
         answer: 1,
-        explain: 'The escape from telescoping constructors. ("One global shared instance" is the ' +
-          'Singleton — your published post.)'
+        explain: 'The escape from telescoping constructors. ("One global shared instance" describes ' +
+          'Singleton; "too many child classes" is closer to Factory Method\'s territory.)'
       }
     ]
 };

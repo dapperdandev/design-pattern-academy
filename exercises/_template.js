@@ -10,6 +10,13 @@
  * extension already blocks the step checks until the file type-checks. Your
  * checks are only about behaviour: does the pattern actually work?
  *
+ * Every lesson stands alone. Teach the pattern from scratch in `meta.intro` and
+ * link only public sources — no private repos, notes or projects, and nothing
+ * that assumes the reader is the author.
+ *
+ * Grade behaviour, not typography: compare numbers, fields and identity exactly,
+ * but compare any display string loosely (case and spacing are the learner's).
+ *
  * ── The check contract ────────────────────────────────────────────────
  * Each check gets a ctx and returns a FAILURE MESSAGE string, or nothing to pass.
  * A thrown error is caught and shown as the failure, so `new c.g.Thing()` on
@@ -53,7 +60,25 @@ module.exports = {
     domain: 'Some concrete domain',
     category: 'Creational',            // Creational | Structural | Behavioral
     blurb: 'One or two sentences for the exercise picker.',
-    missionNote: '<b>Mission tie-in:</b> why this exercise exists, and what it feeds.',
+    // The up-front explanation, rendered above the steps. Four beats, in this order:
+    // a one-sentence definition (.lede), the problem it solves with the bad code shown,
+    // the cast as a <table> of role -> job -> the name it has here, and when to reach
+    // for it / skip it. A learner who reads only this should be able to say what the
+    // pattern is for. Keep it self-contained: no private repos, notes or projects.
+    intro:
+      '<p class="lede"><b>The Example Pattern</b> does … in one sentence.</p>' +
+      '<h3>The problem it solves</h3>' +
+      '<p>The code you would write without it:</p>' +
+      '<pre class="snippet">// the smell, three lines at most</pre>' +
+      '<p>Why that hurts as the code grows.</p>' +
+      '<h3>The cast</h3>' +
+      '<table>' +
+      '<tr><th>Role</th><td>What it owns. — <code>ClassNameHere</code></td></tr>' +
+      '</table>' +
+      '<h3>Reach for it when…</h3>' +
+      '<ul><li>…</li></ul>' +
+      '<h3>…and skip it when</h3>' +
+      '<p>…, and what to do instead.</p>',
     howto: 'Write your code in <code>my-pattern.ts</code> beside this panel. Every save re-runs ' +
       'the checks.',
     primarySource: {
@@ -88,7 +113,7 @@ module.exports = {
   steps: [
     {
       title: 'First role',
-      chip: 'blog: Dissection → Role',       // optional badge, top-right of the step
+      chip: 'role: First role',              // optional badge, top-right of the step
       body:
         '<p>Teach the knowledge needed for <i>this step only</i> — working memory is small.</p>' +
         '<p><b>Write:</b></p><ul><li>…</li></ul>' +

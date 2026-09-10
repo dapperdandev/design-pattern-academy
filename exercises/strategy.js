@@ -42,10 +42,40 @@ module.exports = {
       category: 'Behavioral',
       blurb: 'Price a parcel three different ways with no branching in the caller. Strategy, ' +
              'Concrete Strategy, Context — plus the TypeScript twist: a strategy can just be a function.',
-      missionNote: '<b>Mission tie-in:</b> what you write here becomes the <i>Example</i> and ' +
-        '<i>Dissection</i> sections of <code>docs/posts/drafts/strategy-pattern.md</code> in the blog ' +
-        'repo. Builder was about <i>constructing</i> one object; Strategy is your first pattern about ' +
-        '<i>swapping behaviour</i> at run time.',
+      intro:
+        '<p class="lede"><b>Strategy</b> defines a family of interchangeable algorithms, puts each ' +
+        'one behind a shared interface, and lets the algorithm change without touching the code ' +
+        'that uses it.</p>' +
+        '<h3>The problem it solves</h3>' +
+        '<p>A method that has to pick between several ways of doing one job grows a branch per ' +
+        'way:</p>' +
+        '<pre class="snippet">if (method === \'standard\') { /* … */ }\n' +
+        'else if (method === \'overnight\') { /* … */ }\n' +
+        'else if (method === \'promo\') { /* … */ }</pre>' +
+        '<p>Every new option edits that function, the branches drift apart, and the caller ends up ' +
+        'owning arithmetic it has no business knowing. Strategy turns each branch into its own ' +
+        'object, and the choice into a value you pass.</p>' +
+        '<h3>The cast</h3>' +
+        '<table>' +
+        '<tr><th>Strategy</th><td>Interface for one interchangeable algorithm — usually a single ' +
+          'method. — <code>ShippingStrategy</code></td></tr>' +
+        '<tr><th>Concrete Strategy</th><td>One whole algorithm behind that interface. ' +
+          '— <code>StandardShipping</code>, <code>OvernightShipping</code></td></tr>' +
+        '<tr><th>Context</th><td>Holds a strategy and delegates to it. Implements no algorithm, ' +
+          'names no concrete one. — <code>Checkout</code></td></tr>' +
+        '<tr><th>Client</th><td>Chooses the concrete strategy and hands it over — the choice ' +
+          'belongs here, not in the context. — your code at the bottom of the file</td></tr>' +
+        '</table>' +
+        '<h3>Reach for it when…</h3>' +
+        '<ul><li>a method branches on a "kind" or "mode", and each branch is a self-contained ' +
+          'algorithm</li>' +
+        '<li>behaviour has to change at run time — per request, per user, per feature flag</li>' +
+        '<li>you want a new algorithm to be a new file rather than an edit to the caller</li></ul>' +
+        '<h3>…and skip it when</h3>' +
+        '<p>there is one algorithm and no prospect of a second, or the branches are one-liners ' +
+        'sharing most of their logic — then the indirection costs more than the <code>if</code>.</p>' +
+        '<p>You will build the three roles above, then meet the form TypeScript makes possible: a ' +
+        'one-method strategy that is just a function.</p>',
       howto: 'Write your code in <code>strategy.ts</code> beside this panel. Every save re-runs the ' +
         'checks, or press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Enter</kbd>. Type errors come from ' +
         'VS Code itself — if it\'s underlined in the editor, fix that first. You can also run the ' +
@@ -70,18 +100,17 @@ module.exports = {
         'console.log(checkout.quote(desk));\n\n' +
         'checkout.setStrategy(asStrategy(() =&gt; 0));   // free-shipping promo\n' +
         'console.log(checkout.quote(desk));</pre>' +
-        '<p>Run it: <code>node strategy/strategy.ts</code>. Now add a fourth rate without touching ' +
-        '<code>Checkout</code> at all — that is the whole return on the pattern.</p>' +
+        '<p>Run it: <code>node strategy/strategy.ts</code>.</p>' +
         '<p><b>To make it stick:</b></p>' +
         '<ul style="margin:8px 0 0; padding-left:18px;">' +
-        '<li><b>Now:</b> draft the <i>Dissection</i> section of your post from memory, one heading ' +
-          'per role — then check back against your code.</li>' +
-        '<li><b>Next:</b> write down the <code>switch</code> statement your <code>Checkout</code> ' +
-          'would have needed instead. That is the smell Strategy removes, and it belongs in your ' +
-          '<i>Introduction</i>.</li>' +
-        '<li><b>In ~2 days:</b> rebuild the file cold. Spaced retrieval beats rereading.</li>' +
-        '<li><b>Then:</b> tell Claude you\'re done — I\'ll review your code against the pattern ' +
-          'and help outline the post.</li></ul>'
+        '<li><b>Now:</b> add a fourth rate without touching <code>Checkout</code> at all. That it ' +
+          'costs you nothing there is the whole return on the pattern.</li>' +
+        '<li><b>Next:</b> write out the <code>switch</code> your <code>Checkout</code> would have ' +
+          'needed instead, and name what it would do to the class over a year of new rates.</li>' +
+        '<li><b>Then:</b> from memory, say which role owns the <i>choice</i> of algorithm and which ' +
+          'owns the algorithm itself. Getting these two backwards is the usual way this pattern is ' +
+          'mis-implemented.</li>' +
+        '<li><b>In ~2 days:</b> rebuild the file cold. Spaced retrieval beats rereading.</li></ul>'
     },
 
     // Types and interfaces are erased at runtime, so only the classes and the
@@ -124,17 +153,10 @@ module.exports = {
     steps: [
       {
         title: 'The Strategy interface',
-        chip: 'blog: Dissection → Strategy',
+        chip: 'role: Strategy',
         body:
-          '<p>A checkout has to price shipping, and there are several ways to do it. The obvious ' +
-          'version grows a branch per method:</p>' +
-          '<pre class="snippet">if (method === \'standard\') { /* … */ }\n' +
-          'else if (method === \'overnight\') { /* … */ }\n' +
-          'else if (method === \'promo\') { /* … */ }</pre>' +
-          '<p>Every new rate edits that function, and the caller ends up owning arithmetic it has no ' +
-          'business knowing. <b>Strategy</b> turns each branch into its own object behind a shared ' +
-          'interface.</p>' +
-          '<p>Start with the two declarations everything else leans on. <b>Write:</b></p><ul>' +
+          '<p>Start with the two declarations everything else leans on — the parcel being priced, ' +
+          'and the contract every rate will implement. <b>Write:</b></p><ul>' +
           '<li><code>type Parcel = { weightKg: number; distanceKm: number }</code> — what gets ' +
             'priced. A plain object type; no class needed.</li>' +
           '<li><code>interface ShippingStrategy</code> with exactly one member: ' +
@@ -179,7 +201,7 @@ module.exports = {
 
       {
         title: 'Concrete Strategies',
-        chip: 'blog: Dissection → Concrete Strategy',
+        chip: 'role: Concrete Strategy',
         body:
           '<p>Now the algorithms themselves. Each is a class that <code>implements ' +
           'ShippingStrategy</code> and does nothing else. <b>Write both:</b></p><ul>' +
@@ -241,7 +263,7 @@ module.exports = {
 
       {
         title: 'The Context',
-        chip: 'blog: Dissection → Context',
+        chip: 'role: Context',
         body:
           '<p>The <b>Context</b> is the class your application actually talks to. It holds a strategy ' +
           'and delegates to it — it never implements a rate itself, and it never mentions a concrete ' +
@@ -328,7 +350,7 @@ module.exports = {
 
       {
         title: 'A function as a strategy',
-        chip: 'blog: Dissection → Function as Strategy',
+        chip: 'variant: function as strategy',
         body:
           '<p><code>ShippingStrategy</code> has one method, so a plain function carries exactly the ' +
           'same information — and TypeScript\'s structural typing means the two are interchangeable ' +
@@ -341,10 +363,9 @@ module.exports = {
           '<p class="why">An object literal with a <code>quote</code> property <i>is</i> a ' +
           '<code>ShippingStrategy</code>. No <code>class</code>, no <code>implements</code> — ' +
           'TypeScript checks the shape, not the declared lineage.</p></details>' +
-          '<p class="why">This is the pragmatic form you will meet most often in TypeScript, and it ' +
-          'is worth its own heading in your post: for a one-method strategy, the class is optional ' +
-          'scaffolding. Keep classes when a rate needs configuration or a name to log; reach for a ' +
-          'function when it is one expression.</p>' +
+          '<p class="why">This is the pragmatic form you will meet most often in TypeScript: for a ' +
+          'one-method strategy, the class is optional scaffolding. Keep classes when a rate needs ' +
+          'configuration or a name to log; reach for a function when it is one expression.</p>' +
           '<p><b>Checkpoint</b> — a free-shipping promo, with no class at all:</p>' +
           '<pre class="snippet">checkout.setStrategy(asStrategy(() =&gt; 0));\n' +
           'console.log(checkout.quote(desk));</pre>' +

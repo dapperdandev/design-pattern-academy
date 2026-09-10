@@ -114,7 +114,7 @@ function panelHtml(webview, extRoot, def, progress) {
 </header>
 
 <main>
-  ${meta.missionNote ? `<div class="note">${meta.missionNote}</div>` : ''}
+  ${meta.intro ? `<section class="intro">${meta.intro}</section>` : ''}
   ${meta.howto ? `<p class="howto">${meta.howto}</p>` : ''}
 
   <div id="results" class="results"><p class="dim">Write step 1, then save the file — checks run automatically.</p></div>
@@ -132,7 +132,9 @@ function panelHtml(webview, extRoot, def, progress) {
         : ''
     }
     ${renderRefs(def)}
-    <p>💬 <b>Stuck or curious?</b> Ask Claude — the session that built this. Nothing is too small to ask.</p>
+    <p>💬 <b>Stuck?</b> The cheat sheet above carries the skeleton and the rules of thumb. Failing
+    that, ask an AI assistant to explain the step you are on a different way — nothing here is too
+    small to ask about.</p>
   </div>
 </main>
 

@@ -169,6 +169,34 @@ test('every exercise has a reference sheet of its own', () => {
   }
 });
 
+test('every exercise explains the pattern before the first step', () => {
+  for (const { def } of extension.listExercises()) {
+    const intro = def.meta.intro || '';
+    assert.ok(intro.length > 600, def.meta.id + ': meta.intro should carry a real explanation');
+    assert.match(intro, /class="lede"/, def.meta.id + ': intro needs a one-sentence definition');
+    assert.match(intro, /<table/, def.meta.id + ': intro needs the cast of roles at a glance');
+    assert.match(intro, /problem/i, def.meta.id + ': intro should show the problem it solves');
+  }
+});
+
+// The lessons are the product. Anything that only makes sense to the author — a private
+// repo path, "your post", a note about the session that wrote it — is a bug in a public
+// extension, so it fails the build rather than waiting to be noticed.
+test('nothing in a lesson refers to a private repo, project or author', () => {
+  const forbidden = /\bblog\b|docs\/posts|MISSION|RESOURCES\.md|learning-record|your (own |published )*post|Dissection section|mission tie-in|the session that built this/i;
+  for (const { def } of extension.listExercises()) {
+    const text = JSON.stringify(def.meta) + JSON.stringify(def.steps) + JSON.stringify(def.quiz || []);
+    const hit = text.match(forbidden);
+    assert.equal(hit, null, def.meta.id + ': lesson text mentions ' + (hit && hit[0]));
+  }
+  const panel = fakeVscode.window.createWebviewPanel();
+  for (const { def } of extension.listExercises()) {
+    const html = panelHtml(panel.webview, ROOT, def, { quiz: [], steps: [] });
+    const hit = html.match(forbidden);
+    assert.equal(hit, null, def.meta.id + ': rendered panel mentions ' + (hit && hit[0]));
+  }
+});
+
 test('panel renders with a CSP nonce and no un-nonced script', () => {
   const { def } = extension.listExercises()[0];
   const panel = fakeVscode.window.createWebviewPanel();
@@ -517,6 +545,18 @@ test('factory: a factory method handing out a stored product is caught', () => {
   ));
   assert.equal(r.steps[3].passed, false);
   assert.match(r.steps[3].checks.find((c) => !c.pass).message, /same object twice/);
+});
+
+test('factory: display names compare loosely, numbers exactly', () => {
+  const titleCased = FACTORY_SOLUTION
+    .replace("name = 'espresso';", "name = 'Espresso';")
+    .replace("name = 'cold brew';", "name = 'Cold Brew';");
+  const r = runChecks(factoryDef, titleCased);
+  assert.equal(r.steps.filter((s) => s.passed).length, factoryDef.steps.length,
+    'capitalisation is the learner\'s business, not a check\'s');
+
+  const wrongSize = runChecks(factoryDef, FACTORY_SOLUTION.replace('ounces = 1;', 'ounces = 2;'));
+  assert.equal(wrongSize.steps[1].passed, false, 'the numbers are still exact');
 });
 
 test('factory: a factory method narrowed to the concrete product is caught', () => {
