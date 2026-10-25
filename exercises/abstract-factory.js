@@ -113,6 +113,13 @@ module.exports = {
         'constructors are then simpler. And know the trade-off going in: a new <i>family</i> is ' +
         'cheap (one new factory), but a new <i>kind</i> of piece means editing the interface and ' +
         'every factory that implements it.</p>' +
+        '<h3>Not the <code>abstract</code> from Factory Method</h3>' +
+        '<p>The name is older than TypeScript\'s keyword. In Factory Method the <i>method</i> is ' +
+        'abstract: a base class leaves <code>brew()</code> unimplemented, calls it from its own ' +
+        'logic, and a <b>subclass</b> fills it in. Here the <i>factory object</i> is the ' +
+        'abstraction: an interface the client is <b>handed</b>, with nothing to subclass. One ' +
+        'product varied by inheritance, versus a family varied by composition. This lesson never ' +
+        'uses the <code>abstract</code> keyword.</p>' +
         '<p>You will build the four roles in the order above, then write the client yourself in ' +
         'the try-it-out at the end.</p>',
       howto: 'Write your code in <code>abstract-factory.ts</code> beside this panel. Every save ' +
