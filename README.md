@@ -56,6 +56,7 @@ Exercises go in the **folder you have open** — best used with a dedicated fold
   builder/builder.ts    your code, one subfolder per pattern
   strategy/strategy.ts
   factory-method/factory-method.ts
+  abstract-factory/abstract-factory.ts
 ```
 
 The two support files exist because the TypeScript server discovers configuration by

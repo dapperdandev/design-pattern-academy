@@ -149,12 +149,13 @@ test('sidebar tree lists exercises with progress and reference sheets', () => {
   assert.ok(refs.some((r) => r.command.arguments[0] === 'builder-pattern.md'));
   assert.ok(refs.some((r) => r.command.arguments[0] === 'strategy-pattern.md'));
   assert.ok(refs.some((r) => r.command.arguments[0] === 'factory-method-pattern.md'));
+  assert.ok(refs.some((r) => r.command.arguments[0] === 'abstract-factory-pattern.md'));
   assert.ok(refs.some((r) => r.command.arguments[0] === 'design-patterns-glossary.md'));
 });
 
 test('exercises are listed in meta.number order', () => {
   assert.deepEqual(extension.listExercises().map((e) => e.id),
-    ['builder', 'strategy', 'factory-method']);
+    ['builder', 'strategy', 'factory-method', 'abstract-factory']);
 });
 
 test('every exercise has a reference sheet of its own', () => {
@@ -578,6 +579,138 @@ test('factory: a factory method narrowed to the concrete product is caught', () 
   assert.equal(r.steps[3].passed, false);
 });
 
+// ---------------------------------------------------------------- grading: abstract factory
+section('== grading: abstract factory ==');
+
+const abstractDef = require(path.join(ROOT, 'exercises/abstract-factory.js'));
+
+const ABSTRACT_SOLUTION = `
+interface Table {
+  surfaceHeightCm: number;
+}
+
+interface Seat {
+  seatHeightCm: number;
+}
+
+class DiningTable implements Table {
+  surfaceHeightCm = 75;
+}
+
+class DiningChair implements Seat {
+  seatHeightCm = 45;
+}
+
+class BarTable implements Table {
+  surfaceHeightCm = 105;
+}
+
+class BarStool implements Seat {
+  seatHeightCm = 75;
+}
+
+interface FurnitureFactory {
+  createTable(): Table;
+  createSeat(): Seat;
+}
+
+class DiningSetFactory implements FurnitureFactory {
+  createTable(): Table {
+    return new DiningTable();
+  }
+
+  createSeat(): Seat {
+    return new DiningChair();
+  }
+}
+
+class BarSetFactory implements FurnitureFactory {
+  createTable(): Table {
+    return new BarTable();
+  }
+
+  createSeat(): Seat {
+    return new BarStool();
+  }
+}
+
+function furnish(factory: FurnitureFactory, guests: number): { table: Table; seats: Seat[] } {
+  const seats: Seat[] = [];
+  for (let i = 0; i < guests; i++) {
+    seats.push(factory.createSeat());
+  }
+  return { table: factory.createTable(), seats };
+}
+
+const diningRoom = furnish(new DiningSetFactory(), 4);
+const barCorner = furnish(new BarSetFactory(), 2);
+
+console.log(diningRoom);
+console.log(barCorner);
+
+const seating = new DiningSetFactory();
+console.log(seating.createTable().surfaceHeightCm - seating.createSeat().seatHeightCm);
+`;
+
+test('abstract: the starting scaffold fails step 1 cleanly', () => {
+  const r = runChecks(abstractDef, abstractDef.scaffold);
+  assert.equal(r.fatal, false);
+  assert.equal(r.steps[0].passed, false);
+});
+
+test('abstract: the reference solution passes every step and every check', () => {
+  const r = runChecks(abstractDef, ABSTRACT_SOLUTION);
+  assert.equal(r.error, null, 'unexpected error: ' + r.error);
+  assert.equal(r.steps.filter((s) => s.passed).length, abstractDef.steps.length);
+  const total = abstractDef.steps.reduce((n, s) => n + s.checks.length, 0);
+  const green = r.steps.reduce((n, s) => n + s.checks.filter((c) => c.pass).length, 0);
+  assert.equal(green, total, `expected ${total} green checks, got ${green}`);
+});
+
+test('abstract: logged output matches what `node` prints', () => {
+  const r = runChecks(abstractDef, ABSTRACT_SOLUTION);
+  const chair = 'DiningChair { seatHeightCm: 45 }';
+  const stool = 'BarStool { seatHeightCm: 75 }';
+  assert.deepEqual(r.logs, [
+    `{ table: DiningTable { surfaceHeightCm: 75 }, seats: [ ${[chair, chair, chair, chair].join(', ')} ] }`,
+    `{ table: BarTable { surfaceHeightCm: 105 }, seats: [ ${stool}, ${stool} ] }`,
+    '30'
+  ]);
+});
+
+test('abstract: a factory that mixes families is caught, and says why it matters', () => {
+  const r = runChecks(abstractDef, ABSTRACT_SOLUTION.replace(
+    'createSeat(): Seat {\n    return new BarStool();',
+    'createSeat(): Seat {\n    return new DiningChair();'
+  ));
+  assert.equal(r.steps[3].passed, false);
+  assert.match(r.steps[3].checks.find((c) => !c.pass).message, /60 cm gap — chin on the table/);
+});
+
+test('abstract: a factory handing out one stored seat is caught', () => {
+  const r = runChecks(abstractDef, ABSTRACT_SOLUTION
+    .replace('class DiningSetFactory implements FurnitureFactory {\n',
+      'class DiningSetFactory implements FurnitureFactory {\n  private chair: Seat = new DiningChair();\n')
+    .replace('createSeat(): Seat {\n    return new DiningChair();', 'createSeat(): Seat {\n    return this.chair;'));
+  assert.equal(r.steps[3].passed, false);
+  assert.match(r.steps[3].checks.find((c) => !c.pass).message, /same object twice/);
+});
+
+test('abstract: a creation method narrowed to the concrete piece is caught', () => {
+  const r = runChecks(abstractDef, ABSTRACT_SOLUTION.replace(
+    'createSeat(): Seat {\n    return new BarStool();',
+    'createSeat(): BarStool {\n    return new BarStool();'
+  ));
+  assert.equal(r.steps[3].passed, false);
+});
+
+test('abstract: product interfaces that share a shape are caught', () => {
+  const r = runChecks(abstractDef,
+    ABSTRACT_SOLUTION.replace(/surfaceHeightCm|seatHeightCm/g, 'heightCm'));
+  assert.equal(r.steps[0].passed, false,
+    'identical members make Table and Seat the same type to TypeScript');
+});
+
 // ---------------------------------------------------------------- shared global scope
 section('== shared global scope ==');
 
@@ -590,7 +723,8 @@ test('no two exercises declare the same top-level name', () => {
   const solutions = [
     ['builder', SOLUTION],
     ['strategy', STRATEGY_SOLUTION],
-    ['factory-method', FACTORY_SOLUTION]
+    ['factory-method', FACTORY_SOLUTION],
+    ['abstract-factory', ABSTRACT_SOLUTION]
   ];
   for (const [id, src] of solutions) {
     const declared = [

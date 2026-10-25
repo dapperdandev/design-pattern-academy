@@ -7,7 +7,7 @@ pattern at a time.
 
 **Creational pattern**
 : A pattern about *how objects get made* — hiding or organising instantiation. Exercises so far:
-Builder, Factory Method. Queued: Abstract Factory, Prototype, Singleton.
+Builder, Factory Method, Abstract Factory. Queued: Prototype, Singleton.
 
 **Behavioral pattern**
 : A pattern about *how objects collaborate* — who calls whom, and what varies at run time.
@@ -78,6 +78,24 @@ the product interface, and a fresh product on every call.
 : One real implementation of the product interface — named in exactly one place, the concrete
 creator that returns it.
 
+## Abstract Factory roles
+
+**Abstract Product**
+: The interface for one *kind* of piece in a family — `Seat`, covering both a dining chair and a
+bar stool. Give each kind distinct members, or structural typing makes them interchangeable.
+
+**Abstract Factory**
+: An interface with one creation method per kind of piece, each returning the abstract product.
+The contract every family signs.
+
+**Concrete Factory**
+: One per family. Every creation method returns that family's piece, so the rule about which
+pieces go together lives in exactly one place.
+
+**Product family**
+: A set of concrete products designed to be used together — a dining table with dining chairs.
+Mixing families is the bug the pattern prevents.
+
 ## Techniques and smells
 
 **Fluent API / method chaining**
@@ -125,6 +143,11 @@ independently of the code using it (GoF). See the [cheat sheet](strategy-pattern
 **Factory Method**
 : Declares a creating method in a base class and lets subclasses decide which class to
 instantiate (GoF). See the [cheat sheet](factory-method-pattern.md).
+
+**Abstract Factory**
+: Provides one interface for creating a family of related objects without naming their concrete
+classes (GoF). Composition where Factory Method uses inheritance. See the
+[cheat sheet](abstract-factory-pattern.md).
 
 ---
 
